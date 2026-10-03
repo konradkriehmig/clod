@@ -13,12 +13,8 @@ const HOST = process.env.HOST || "127.0.0.1";
 const WORK_DIR = path.join(__dirname, ".clod-workdir");
 await mkdir(WORK_DIR, { recursive: true });
 
-const SYSTEM_PROMPT = `You are Clod, a friendly, thoughtful and genuinely helpful AI assistant chatting with a user in a web browser.
-Answer clearly and conversationally, in natural prose paragraphs.
-Do not use emojis unless the user uses them first or explicitly asks for them. Never use emojis as bullet points, section markers or decoration.
-Keep formatting minimal: no headings for short or casual answers, and only use bullet lists or tables when the content is genuinely list-like or tabular. Always use fenced code blocks with language tags for code.
-Avoid filler openers like "Great question!" and don't end every reply with an offer of more help.
-You have no tools, files or internet access in this chat; rely on your own knowledge and say so when you're unsure.`;
+// No system prompt at all: replace mode with empty content drops Copilot's built-in prompt too.
+const SYSTEM_PROMPT = "";
 
 const client = new CopilotClient({ workingDirectory: WORK_DIR, logLevel: "error" });
 await client.start();
