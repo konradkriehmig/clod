@@ -100,7 +100,6 @@ body.sidebar-hidden .icon-btn.floating { display: block; }
 .conv .title { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .conv .del { visibility: hidden; background: none; border: none; cursor: pointer; color: var(--muted); padding: 0 4px; }
 .conv:hover .del { visibility: visible; }
-.sidebar-footer { font-size: 11px; color: var(--muted); padding: 8px; font-family: var(--trashy); }
 
 /* Main */
 #main {
