@@ -152,6 +152,7 @@
       wrap.className = "msg assistant" + (msg.error ? " error" : "");
       wrap.innerHTML = `<img class="avatar" src="/logo.svg" alt=""><div class="body-col" style="flex:1;min-width:0">
         <details class="thinking" hidden><summary>Thinkign…</summary><div class="body"></div></details>
+        <div class="status" hidden></div>
         <div class="content"></div><div class="meta"></div></div>`;
       updateAssistant(wrap, msg, false);
     }
@@ -159,12 +160,41 @@
     return wrap;
   }
 
+  // Clod's version of the whimsical "Pondering…" status words, only dumber.
+  const FILLER_WORDS = [
+    "Thinkerating", "Brainin", "Noodlin", "Pondorin", "Smooshin thoughts", "Cogitatin",
+    "Ruminatering", "Wigglin neurons", "Concoctin", "Flibbertigibbitin", "Marinatin",
+    "Simmerin", "Percolatering", "Doin a big think", "Schemin", "Bamboozlin", "Clodulating",
+    "Mullin it ovr", "Spelunkin", "Fermentin", "Head scratchin", "Rummagin", "Moseyin",
+    "Thunkin", "Bloopin", "Shufflin brain cells", "Puzzlin", "Contemplatin belly button",
+    "Wranglin wurds", "Yeehawin", "Doodlin", "Boppin", "Jigglin the wires", "Hmmmin",
+    "Untanglin spaghetti", "Askin my mom", "Blowin on the cartridge", "Stirrin the soup",
+    "Lickin the battery", "Countin on fingers", "Loadin smartnes", "Turnin it of and on agen",
+  ];
+  const randomFiller = () => FILLER_WORDS[Math.floor(Math.random() * FILLER_WORDS.length)] + "…";
+  setInterval(() => {
+    document.querySelectorAll(".msg.assistant.streaming .status:not([hidden])").forEach((s) => {
+      s.textContent = randomFiller();
+    });
+    document.querySelectorAll(".msg.assistant.streaming .thinking.live summary").forEach((s) => {
+      s.textContent = randomFiller();
+    });
+  }, 1800);
+
   function updateAssistant(wrap, msg, streaming) {
     wrap.classList.toggle("streaming", streaming);
+    const status = wrap.querySelector(".status");
+    const waiting = streaming && !msg.text && !msg.thinking;
+    if (waiting && status.hidden) status.textContent = randomFiller();
+    status.hidden = !waiting;
     const thinking = wrap.querySelector(".thinking");
     if (msg.thinking) {
       thinking.hidden = false;
-      thinking.querySelector("summary").textContent = streaming && !msg.text ? "Thinkign…" : "Thot proccess";
+      const live = streaming && !msg.text;
+      const summary = thinking.querySelector("summary");
+      if (live && !thinking.classList.contains("live")) summary.textContent = randomFiller();
+      if (!live) summary.textContent = "Thot proccess";
+      thinking.classList.toggle("live", live);
       thinking.querySelector(".body").textContent = msg.thinking;
     }
     const content = wrap.querySelector(".content");
