@@ -19,7 +19,15 @@
   let current = null;
   let inflight = null;
 
-  const save = () => localStorage.setItem(STORE_KEY, JSON.stringify(conversations));
+  const save = () => {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(conversations));
+    } catch {
+      // Storage full (probably pics): drop old thumbnails and try again.
+      conversations.forEach((c) => c !== current && c.messages.forEach((m) => delete m.images));
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(conversations)); } catch {}
+    }
+  };
   const savePrefs = () => localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
   const modelName = (id) => models.find((m) => m.id === id)?.name || id;
@@ -63,6 +71,7 @@
       efforts.map((e) => `<option value="${e}">Thinkin: ${e}</option>`).join("");
     const preferred = current?.effort ?? prefs.effort ?? "";
     els.effort.value = efforts.includes(preferred) ? preferred : "";
+    updateAttachState();
   }
 
   els.model.addEventListener("change", () => {
@@ -144,10 +153,27 @@
     const wrap = document.createElement("div");
     if (msg.role === "user") {
       wrap.className = "msg user";
-      const bubble = document.createElement("div");
-      bubble.className = "bubble";
-      bubble.textContent = msg.text;
-      wrap.append(bubble);
+      const stack = document.createElement("div");
+      stack.className = "stack";
+      if (msg.images?.length) {
+        const pics = document.createElement("div");
+        pics.className = "pics";
+        msg.images.forEach((src) => {
+          const img = document.createElement("img");
+          img.src = src;
+          img.alt = "atached pic";
+          img.addEventListener("click", () => window.open().document.write(`<img src="${src}" style="max-width:100%">`));
+          pics.append(img);
+        });
+        stack.append(pics);
+      }
+      if (msg.text) {
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = msg.text;
+        stack.append(bubble);
+      }
+      wrap.append(stack);
     } else {
       wrap.className = "msg assistant" + (msg.error ? " error" : "");
       wrap.innerHTML = `<img class="avatar" src="/logo.svg" alt=""><div class="body-col" style="flex:1;min-width:0">
@@ -247,8 +273,9 @@
   // ---------- Dumb titles ----------
   const titling = new Set();
   async function retitle(convo) {
-    const first = convo.messages.find((m) => m.role === "user")?.text;
-    if (!first || convo.dumbTitle || titling.has(convo.id)) return;
+    const firstMsg = convo.messages.find((m) => m.role === "user");
+    const first = firstMsg && (firstMsg.text || (firstMsg.images?.length ? "(user sent a screenshot/foto with no text)" : ""));
+    if (!first || convo.dumbTitle === 2 || titling.has(convo.id)) return;
     titling.add(convo.id);
     try {
       const res = await fetch("/api/title", {
@@ -259,7 +286,7 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       convo.title = data.title;
-      convo.dumbTitle = true;
+      convo.dumbTitle = 2;
       save();
       renderList();
     } catch (e) {
@@ -275,11 +302,149 @@
   }
 
   async function retitleOldChats() {
-    for (const c of conversations.filter((c) => !c.dumbTitle)) await retitle(c);
+    for (const c of conversations.filter((c) => c.dumbTitle !== 2)) await retitle(c);
   }
 
+  // ---------- Photos ----------
+  const MAX_SIDE = 1568;
+  const MAX_BYTES = 3 * 1024 * 1024;
+  let pending = []; // { name, mimeType, data (base64), preview (dataURL) }
+  const attachEls = { strip: $("#attachments"), btn: $("#attach"), input: $("#file-input") };
+
+  function toast(text) {
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.textContent = text;
+    document.body.append(t);
+    setTimeout(() => t.remove(), 2600);
+  }
+
+  const currentModel = () => models.find((m) => m.id === els.model.value);
+  const maxImages = () => (currentModel()?.vision ? currentModel().maxImages : 0);
+
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Coudnt read that pic"));
+      img.src = url;
+    });
+  }
+
+  function canvasFor(img, maxSide) {
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  async function prepareImage(file) {
+    const img = await loadImage(file);
+    const c = canvasFor(img, MAX_SIDE);
+    // Screenshots stay crisp as PNG; fall back to JPEG if too big.
+    let dataUrl = c.toDataURL("image/png");
+    let mimeType = "image/png";
+    for (const q of [0.9, 0.8, 0.65, 0.5]) {
+      if (dataUrl.length * 0.75 <= MAX_BYTES) break;
+      dataUrl = c.toDataURL("image/jpeg", q);
+      mimeType = "image/jpeg";
+    }
+    const preview = canvasFor(img, 440).toDataURL("image/jpeg", 0.8);
+    URL.revokeObjectURL(img.src);
+    return { name: file.name || "screenshot.png", mimeType, data: dataUrl.split(",")[1], preview };
+  }
+
+  async function addFiles(files) {
+    const imgs = [...files].filter((f) => f.type.startsWith("image/"));
+    if (!imgs.length) return;
+    const limit = maxImages();
+    if (!limit) return toast(`${currentModel()?.name || "This modle"} cant see pics`);
+    for (const f of imgs) {
+      if (pending.length >= limit) {
+        toast(`${currentModel().name} only takes ${limit} pic${limit > 1 ? "s" : ""} at a tiem`);
+        break;
+      }
+      try {
+        pending.push(await prepareImage(f));
+      } catch (e) {
+        toast(e.message);
+      }
+    }
+    renderPending();
+  }
+
+  function renderPending() {
+    attachEls.strip.hidden = !pending.length;
+    attachEls.strip.innerHTML = "";
+    pending.forEach((p, i) => {
+      const t = document.createElement("div");
+      t.className = "thumb";
+      t.innerHTML = `<img src="${p.preview}" alt=""><button type="button" class="rm" title="Remuve">✕</button>`;
+      t.querySelector(".rm").addEventListener("click", () => {
+        pending.splice(i, 1);
+        renderPending();
+      });
+      attachEls.strip.append(t);
+    });
+    updateAttachState();
+    autosize();
+  }
+
+  function updateAttachState() {
+    const limit = maxImages();
+    attachEls.btn.disabled = !limit;
+    attachEls.btn.title = limit ? `Atach a pic (or just pasete it) · max ${limit}` : "This modle cant see pics";
+  }
+
+  attachEls.btn.addEventListener("click", () => attachEls.input.click());
+  attachEls.input.addEventListener("change", () => {
+    addFiles(attachEls.input.files);
+    attachEls.input.value = "";
+  });
+  // Paste screenshots from anywhere on the page.
+  document.addEventListener("paste", (e) => {
+    const files = [...(e.clipboardData?.items || [])]
+      .filter((it) => it.kind === "file" && it.type.startsWith("image/"))
+      .map((it) => it.getAsFile())
+      .filter(Boolean);
+    if (!files.length) return;
+    e.preventDefault();
+    addFiles(files);
+    els.prompt.focus();
+  });
+  let dragDepth = 0;
+  document.addEventListener("dragenter", (e) => {
+    if (![...e.dataTransfer.types].includes("Files")) return;
+    dragDepth++;
+    document.body.classList.add("dragging");
+  });
+  document.addEventListener("dragleave", () => {
+    if (--dragDepth <= 0) {
+      dragDepth = 0;
+      document.body.classList.remove("dragging");
+    }
+  });
+  document.addEventListener("dragover", (e) => e.preventDefault());
+  document.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dragDepth = 0;
+    document.body.classList.remove("dragging");
+    addFiles(e.dataTransfer.files);
+  });
+  els.model.addEventListener("change", () => {
+    const limit = maxImages();
+    if (pending.length > limit) {
+      pending = pending.slice(0, limit);
+      toast(limit ? `This modle only takes ${limit} pic${limit > 1 ? "s" : ""}, removd the rest` : "This modle cant see pics, removd them");
+    }
+    renderPending();
+  });
+
   // ---------- Sending ----------
-  async function send(text) {
+  async function send(text, images = []) {
     const model = els.model.value;
     if (!models.some((m) => m.id === model)) return;
     const effort = els.effort.value;
@@ -293,7 +458,7 @@
     convo.effort = effort;
     convo.updatedAt = Date.now();
 
-    const userMsg = { role: "user", text };
+    const userMsg = { role: "user", text, images: images.map((i) => i.preview) };
     convo.messages.push(userMsg);
     document.body.classList.add("has-messages");
     appendMessage(userMsg);
@@ -328,7 +493,13 @@
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: convo.serverId, model, effort, prompt: text }),
+        body: JSON.stringify({
+          conversationId: convo.serverId,
+          model,
+          effort,
+          prompt: text,
+          images: images.map(({ name, mimeType, data }) => ({ name, mimeType, data })),
+        }),
         signal: controller.signal,
       });
       if (!res.ok) {
@@ -384,17 +555,20 @@
     els.send.classList.toggle("stop", busy);
     els.send.textContent = busy ? "■" : "↑";
     els.send.title = busy ? "Stahp" : "Sned";
-    els.send.disabled = !busy && !els.prompt.value.trim();
+    els.send.disabled = !busy && !els.prompt.value.trim() && !pending.length;
   }
 
   els.composer.addEventListener("submit", (e) => {
     e.preventDefault();
     if (inflight) return inflight.abort();
     const text = els.prompt.value.trim();
-    if (!text) return;
+    if (!text && !pending.length) return;
+    const images = pending;
+    pending = [];
+    renderPending();
     els.prompt.value = "";
     autosize();
-    send(text);
+    send(text, images);
   });
 
   els.prompt.addEventListener("keydown", (e) => {
@@ -407,7 +581,7 @@
   function autosize() {
     els.prompt.style.height = "auto";
     els.prompt.style.height = Math.min(els.prompt.scrollHeight, 260) + "px";
-    if (!inflight) els.send.disabled = !els.prompt.value.trim();
+    if (!inflight) els.send.disabled = !els.prompt.value.trim() && !pending.length;
   }
   els.prompt.addEventListener("input", autosize);
 

@@ -30,9 +30,12 @@
     <section id="messages" aria-live="polite"></section>
 
     <form id="composer">
+      <div id="attachments" hidden></div>
       <textarea id="prompt" rows="1" placeholder="How can Clod halp you todya?" autofocus></textarea>
       <div class="composer-bar">
         <div class="pickers">
+          <button id="attach" type="button" class="attach" title="Atach a pic (or just pasete it)" aria-label="Atach a pic">📎</button>
+          <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden />
           <select id="model" title="Model"></select>
           <select id="effort" title="Thinkin efort"></select>
         </div>

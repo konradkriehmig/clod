@@ -215,6 +215,30 @@ body:not(.has-messages) #composer { margin-top: 28px; }
 .send.stop { background: var(--text); color: var(--bg); font-size: 14px; }
 .disclaimer { text-align: center; font-size: 11px; color: var(--muted); padding: 2px 16px 10px; }
 
+.attach {
+  background: none; border: 1px solid transparent; border-radius: 8px; cursor: pointer;
+  font-size: 15px; padding: 2px 7px;
+}
+.attach:hover { border-color: var(--border); }
+.attach:disabled { opacity: .35; cursor: default; }
+#attachments { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.thumb { position: relative; width: 64px; height: 64px; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
+.thumb .rm {
+  position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%;
+  border: none; background: var(--text); color: var(--bg); font-size: 11px; cursor: pointer; line-height: 20px; padding: 0;
+}
+.msg.user .stack { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 85%; }
+.msg.user .pics { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.msg.user .pics img { max-width: 220px; max-height: 220px; border-radius: 12px; border: 1px solid var(--border); cursor: zoom-in; }
+.msg.user .stack .bubble { max-width: 100%; }
+body.dragging #composer { outline: 3px dashed var(--accent); outline-offset: 4px; }
+.toast {
+  position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+  background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 10px;
+  font-size: 13px; font-family: var(--trashy); z-index: 50;
+}
+
 @media (max-width: 720px) {
   #sidebar { position: absolute; z-index: 10; height: 100%; }
   #greeting { font-size: 30px; }

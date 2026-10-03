@@ -38,6 +38,8 @@ async function getClaudeModels() {
         .replace(/haiku/gi, "Hiaku"),
       reasoningEfforts: m.supportedReasoningEfforts ?? [],
       vision: Boolean(m.capabilities?.supports?.vision),
+      maxImages: m.capabilities?.limits?.vision?.max_prompt_images ?? 0,
+      imageTypes: (m.capabilities?.limits?.vision?.supported_media_types ?? []).filter((t) => t.startsWith("image/")),
       contextWindow: m.capabilities?.limits?.max_context_window_tokens ?? null,
     }));
   modelCache = { at: Date.now(), models };
@@ -88,7 +90,7 @@ function readJson(req) {
     let body = "";
     req.on("data", (c) => {
       body += c;
-      if (body.length > 2_000_000) reject(new Error("Body too large"));
+      if (body.length > 40_000_000) reject(new Error("Body too larg"));
     });
     req.on("end", () => {
       try {
@@ -107,13 +109,24 @@ function sendJson(res, status, data) {
 }
 
 async function handleChat(req, res) {
-  const { conversationId, model, effort, prompt } = await readJson(req);
-  if (typeof prompt !== "string" || !prompt.trim()) return sendJson(res, 400, { error: "Empty promt" });
+  const { conversationId, model, effort, prompt, images = [] } = await readJson(req);
+  if (typeof prompt !== "string") return sendJson(res, 400, { error: "Empty promt" });
+  if (!prompt.trim() && !(Array.isArray(images) && images.length)) return sendJson(res, 400, { error: "Empty promt" });
 
   const models = await getClaudeModels();
   const modelInfo = models.find((m) => m.id === model);
   if (!modelInfo) return sendJson(res, 400, { error: `Unknwon Clod modle: ${model}` });
   const validEffort = effort && modelInfo.reasoningEfforts.includes(effort) ? effort : undefined;
+  if (!Array.isArray(images) || images.length > modelInfo.maxImages) {
+    return sendJson(res, 400, { error: `${modelInfo.name} only takes ${modelInfo.maxImages} pic(s) at a tiem` });
+  }
+  const attachments = [];
+  for (const img of images) {
+    if (!img || typeof img.data !== "string" || !modelInfo.imageTypes.includes(img.mimeType)) {
+      return sendJson(res, 400, { error: "That pic type is not suported" });
+    }
+    attachments.push({ type: "blob", data: img.data, mimeType: img.mimeType, displayName: String(img.name || "photo").slice(0, 100) });
+  }
 
   const entry = await getSession(conversationId || null, model, validEffort);
   if (entry.busy) return sendJson(res, 409, { error: "Clod is stil thinkin about ur last mesage." });
@@ -156,16 +169,16 @@ async function handleChat(req, res) {
   });
 
   try {
-    await session.send({ prompt });
+    await session.send({ prompt: prompt.trim() || "(the user sent a photo with no text)", attachments });
   } catch (e) {
     finish("error", { error: e.message });
   }
 }
 
 const TITLE_PROMPT = `You name chats for a deliberately dumb, low-budget chatbot called Clod.
-Given the user's first message, reply with ONLY a title of 2 to 4 words, all lowercase, no quotes, no punctuation.
+Given the user's first message, reply with ONLY a title of 1 to 3 very short words (max 18 characters total), all lowercase, no quotes, no punctuation.
 It must sound really simple and dumb, like a toddler or caveman wrote it, and contain at least one spelling mistake.
-Examples: "math thingy", "big code problm", "sayin helo", "fixin the computr", "food qestion".`;
+Examples: "math thingy", "code problm", "helo", "fix computr", "food qestion", "rent mony".`;
 
 async function makeDumbTitle(text) {
   const models = await getClaudeModels();
@@ -178,14 +191,25 @@ async function makeDumbTitle(text) {
     onPermissionRequest: () => ({ kind: "denied-interactively-by-user" }),
   });
   try {
-    const reply = await session.sendAndWait({ prompt: `First message:\n${text.slice(0, 2000)}` }, 30_000);
-    const title = (reply?.data?.content || "")
+    const reply = await session.sendAndWait(
+      { prompt: `<first_message>\n${text.slice(0, 1500)}\n</first_message>\nReply with ONLY the dumb title, nothing else.` },
+      45_000,
+    );
+    let title = (reply?.data?.content || "")
+      .trim()
       .split("\n")[0]
-      .replace(/["'`*.#:]/g, "")
+      .replace(/^title\s*[:-]?\s*/i, "")
+      .replace(/[^\p{L}\p{N}\s]/gu, "")
       .trim()
       .toLowerCase()
-      .slice(0, 40);
-    return title || "chat thingy";
+      .split(/\s+/)
+      .slice(0, 3)
+      .join(" ");
+    while (title.length > 20 && title.includes(" ")) title = title.slice(0, title.lastIndexOf(" "));
+    return title.slice(0, 20) || "chat thingy";
+  } catch (e) {
+    console.error("Title failed:", e.message);
+    return "chat thingy";
   } finally {
     await session.disconnect().catch(() => {});
     await client.deleteSession(session.sessionId).catch(() => {});

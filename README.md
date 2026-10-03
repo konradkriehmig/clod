@@ -13,6 +13,8 @@ bootleg MS-Paint logo.
 - Lets you switch models and thinking effort mid-conversation (`session.setModel`) without losing history
 - Keeps conversation history in `localStorage` and resumes server sessions after a restart
 - Includes a Stahp button (`session.abort()`), Markdown rendering, code copy buttons and dark mode
+- Takes pics: paste a screenshot with Ctrl+V anywere, drag-drop, or use the 📎 buton (per-model limits, e.g. Opsu 5.5 takes 1)
+- Gives chats realy dumb short titles
 
 ## Requirments
 
