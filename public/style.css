@@ -1,3 +1,9 @@
+/* Free OFL lookalikes of Claude's fonts: Source Serif 4 and DM Sans */
+@font-face { font-family: "Clod Serif"; font-style: normal; font-weight: 400 700; font-display: swap; src: url(fonts/SourceSerif4-normal.woff2) format("woff2"); }
+@font-face { font-family: "Clod Serif"; font-style: italic; font-weight: 400 700; font-display: swap; src: url(fonts/SourceSerif4-italic.woff2) format("woff2"); }
+@font-face { font-family: "Clod Sans"; font-style: normal; font-weight: 400 700; font-display: swap; src: url(fonts/DMSans-normal.woff2) format("woff2"); }
+@font-face { font-family: "Clod Sans"; font-style: italic; font-weight: 400 700; font-display: swap; src: url(fonts/DMSans-italic.woff2) format("woff2"); }
+
 :root {
   --bg: #f5f2ea;
   --sidebar: #ece8dd;
@@ -9,8 +15,8 @@
   --accent-dark: #c94f0b;
   --user-bubble: #e8e2d4;
   --code-bg: #2b2925;
-  --serif: Georgia, "Times New Roman", serif;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif: "Clod Serif", Georgia, "Times New Roman", serif;
+  --sans: "Clod Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --trashy: "Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive;
 }
 
