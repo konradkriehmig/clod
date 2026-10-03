@@ -93,7 +93,7 @@
       parts.push(blocks(md.slice(last, m.index)));
       const lang = m[1] ? `<span class="lang">${escapeHtml(m[1])}</span>` : "";
       parts.push(
-        `<pre>${lang}<button class="copy" type="button">Copy</button><code>${escapeHtml(m[2].replace(/\n$/, ""))}</code></pre>`,
+        `<pre>${lang}<button class="copy" type="button">Coppy</button><code>${escapeHtml(m[2].replace(/\n$/, ""))}</code></pre>`,
       );
       last = fence.lastIndex;
       if (m[0].length === 0) fence.lastIndex++;

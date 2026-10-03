@@ -26,25 +26,25 @@
 
   function setGreeting() {
     const h = new Date().getHours();
-    const part = h < 5 ? "Burning the midnight oil" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
-    els.greeting.textContent = `${part}, human`;
+    const part = h < 5 ? "Burnin the midnite oil" : h < 12 ? "Goood mornin" : h < 18 ? "Good afternon" : "Good evenin";
+    els.greeting.textContent = `${part}, humman`;
   }
 
   // ---------- Models ----------
   async function loadModels() {
-    els.model.innerHTML = "<option>Loading models…</option>";
+    els.model.innerHTML = "<option>Loadin modles…</option>";
     try {
       const res = await fetch("/api/models");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
       models = data.models;
     } catch (e) {
-      els.model.innerHTML = "<option>Couldn't load models</option>";
+      els.model.innerHTML = "<option>Coudlnt load modles</option>";
       console.error(e);
       return;
     }
     if (!models.length) {
-      els.model.innerHTML = "<option>No Claude models available</option>";
+      els.model.innerHTML = "<option>No Clod modles availble</option>";
       return;
     }
     els.model.innerHTML = models.map((m) => `<option value="${m.id}">${m.name}</option>`).join("");
@@ -59,8 +59,8 @@
     const efforts = m?.reasoningEfforts || [];
     els.effort.style.display = efforts.length ? "" : "none";
     els.effort.innerHTML =
-      `<option value="">Default thinking</option>` +
-      efforts.map((e) => `<option value="${e}">Thinking: ${e}</option>`).join("");
+      `<option value="">Defualt thinkin</option>` +
+      efforts.map((e) => `<option value="${e}">Thinkin: ${e}</option>`).join("");
     const preferred = current?.effort ?? prefs.effort ?? "";
     els.effort.value = efforts.includes(preferred) ? preferred : "";
   }
@@ -85,10 +85,10 @@
         row.className = "conv" + (current?.id === c.id ? " active" : "");
         const title = document.createElement("span");
         title.className = "title";
-        title.textContent = c.title || "New chat";
+        title.textContent = c.title || "New chatt";
         const del = document.createElement("button");
         del.className = "del";
-        del.title = "Delete";
+        del.title = "Delet";
         del.textContent = "✕";
         del.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -102,7 +102,7 @@
 
   function deleteConversation(id) {
     const c = conversations.find((x) => x.id === id);
-    if (!c || !confirm(`Delete "${c.title || "New chat"}"?`)) return;
+    if (!c || !confirm(`Delet "${c.title || "New chatt"}"?`)) return;
     if (c.serverId) fetch(`/api/conversations/${c.serverId}`, { method: "DELETE" }).catch(() => {});
     conversations = conversations.filter((x) => x.id !== id);
     save();
@@ -151,7 +151,7 @@
     } else {
       wrap.className = "msg assistant" + (msg.error ? " error" : "");
       wrap.innerHTML = `<img class="avatar" src="/logo.svg" alt=""><div class="body-col" style="flex:1;min-width:0">
-        <details class="thinking" hidden><summary>Thinking…</summary><div class="body"></div></details>
+        <details class="thinking" hidden><summary>Thinkign…</summary><div class="body"></div></details>
         <div class="content"></div><div class="meta"></div></div>`;
       updateAssistant(wrap, msg, false);
     }
@@ -164,7 +164,7 @@
     const thinking = wrap.querySelector(".thinking");
     if (msg.thinking) {
       thinking.hidden = false;
-      thinking.querySelector("summary").textContent = streaming && !msg.text ? "Thinking…" : "Thought process";
+      thinking.querySelector("summary").textContent = streaming && !msg.text ? "Thinkign…" : "Thot proccess";
       thinking.querySelector(".body").textContent = msg.thinking;
     }
     const content = wrap.querySelector(".content");
@@ -185,15 +185,15 @@
     meta.innerHTML = "";
     if (!streaming && msg.model) {
       const label = document.createElement("span");
-      label.textContent = modelName(msg.model) + (msg.effort ? ` · ${msg.effort}` : "") + (msg.stopped ? " · stopped" : "");
+      label.textContent = modelName(msg.model) + (msg.effort ? ` · ${msg.effort}` : "") + (msg.stopped ? " · stoped" : "");
       meta.append(label);
       if (msg.text) {
         const copy = document.createElement("button");
-        copy.textContent = "Copy";
+        copy.textContent = "Coppy";
         copy.addEventListener("click", () => {
           navigator.clipboard.writeText(msg.text);
-          copy.textContent = "Copied!";
-          setTimeout(() => (copy.textContent = "Copy"), 1200);
+          copy.textContent = "Copyed!";
+          setTimeout(() => (copy.textContent = "Coppy"), 1200);
         });
         meta.append(copy);
       }
@@ -204,8 +204,8 @@
     const btn = e.target.closest("pre .copy");
     if (!btn) return;
     navigator.clipboard.writeText(btn.parentElement.querySelector("code").textContent);
-    btn.textContent = "Copied!";
-    setTimeout(() => (btn.textContent = "Copy"), 1200);
+    btn.textContent = "Copyed!";
+    setTimeout(() => (btn.textContent = "Coppy"), 1200);
   });
 
   function scrollToBottom(force) {
@@ -299,7 +299,7 @@
       }
     } catch (e) {
       if (e.name === "AbortError") reply.stopped = true;
-      else if (!reply.text) reply.error = e.message || "Something went wrong";
+      else if (!reply.text) reply.error = e.message || "Somthing went wrong";
       else reply.text += `\n\n*⚠ ${e.message}*`;
     } finally {
       finished = true;
@@ -318,7 +318,7 @@
   function setBusy(busy) {
     els.send.classList.toggle("stop", busy);
     els.send.textContent = busy ? "■" : "↑";
-    els.send.title = busy ? "Stop" : "Send";
+    els.send.title = busy ? "Stahp" : "Sned";
     els.send.disabled = !busy && !els.prompt.value.trim();
   }
 
