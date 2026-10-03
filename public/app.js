@@ -244,6 +244,40 @@
     if (force || nearBottom) m.scrollTop = m.scrollHeight;
   }
 
+  // ---------- Dumb titles ----------
+  const titling = new Set();
+  async function retitle(convo) {
+    const first = convo.messages.find((m) => m.role === "user")?.text;
+    if (!first || convo.dumbTitle || titling.has(convo.id)) return;
+    titling.add(convo.id);
+    try {
+      const res = await fetch("/api/title", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: first }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      convo.title = data.title;
+      convo.dumbTitle = true;
+      save();
+      renderList();
+    } catch (e) {
+      console.warn("Title failed", e);
+      if (convo.title === "thinkin of a naem…") {
+        convo.title = first.slice(0, 60);
+        save();
+        renderList();
+      }
+    } finally {
+      titling.delete(convo.id);
+    }
+  }
+
+  async function retitleOldChats() {
+    for (const c of conversations.filter((c) => !c.dumbTitle)) await retitle(c);
+  }
+
   // ---------- Sending ----------
   async function send(text) {
     const model = els.model.value;
@@ -251,7 +285,7 @@
     const effort = els.effort.value;
 
     if (!current) {
-      current = { id: uid(), serverId: null, title: text.slice(0, 60), messages: [], updatedAt: Date.now() };
+      current = { id: uid(), serverId: null, title: "thinkin of a naem…", messages: [], updatedAt: Date.now() };
       conversations.push(current);
     }
     const convo = current;
@@ -342,6 +376,7 @@
         scrollToBottom();
       }
       renderList();
+      retitle(convo);
     }
   }
 
@@ -384,5 +419,5 @@
   setGreeting();
   renderList();
   setBusy(false);
-  loadModels();
+  loadModels().then(retitleOldChats);
 })();

@@ -162,6 +162,36 @@ async function handleChat(req, res) {
   }
 }
 
+const TITLE_PROMPT = `You name chats for a deliberately dumb, low-budget chatbot called Clod.
+Given the user's first message, reply with ONLY a title of 2 to 4 words, all lowercase, no quotes, no punctuation.
+It must sound really simple and dumb, like a toddler or caveman wrote it, and contain at least one spelling mistake.
+Examples: "math thingy", "big code problm", "sayin helo", "fixin the computr", "food qestion".`;
+
+async function makeDumbTitle(text) {
+  const models = await getClaudeModels();
+  const model = (models.find((m) => /haiku/i.test(m.id)) || models[0])?.id;
+  const session = await client.createSession({
+    model,
+    availableTools: [],
+    enableSessionStore: false,
+    systemMessage: { mode: "replace", content: TITLE_PROMPT },
+    onPermissionRequest: () => ({ kind: "denied-interactively-by-user" }),
+  });
+  try {
+    const reply = await session.sendAndWait({ prompt: `First message:\n${text.slice(0, 2000)}` }, 30_000);
+    const title = (reply?.data?.content || "")
+      .split("\n")[0]
+      .replace(/["'`*.#:]/g, "")
+      .trim()
+      .toLowerCase()
+      .slice(0, 40);
+    return title || "chat thingy";
+  } finally {
+    await session.disconnect().catch(() => {});
+    await client.deleteSession(session.sessionId).catch(() => {});
+  }
+}
+
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -191,6 +221,11 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { models: await getClaudeModels() });
     }
     if (req.method === "POST" && pathname === "/api/chat") return await handleChat(req, res);
+    if (req.method === "POST" && pathname === "/api/title") {
+      const { text } = await readJson(req);
+      if (typeof text !== "string" || !text.trim()) return sendJson(res, 400, { error: "Empty promt" });
+      return sendJson(res, 200, { title: await makeDumbTitle(text) });
+    }
     const del = pathname.match(/^\/api\/conversations\/([\w-]+)$/);
     if (req.method === "DELETE" && del) {
       const entry = conversations.get(del[1]);
