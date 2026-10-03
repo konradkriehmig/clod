@@ -31,7 +31,11 @@ async function getClaudeModels() {
     .filter((m) => /claude/i.test(`${m.id} ${m.name}`))
     .map((m) => ({
       id: m.id,
-      name: m.name.replace(/claude/gi, "Clod"),
+      name: m.name
+        .replace(/claude/gi, "Clod")
+        .replace(/sonnet/gi, "Sonet")
+        .replace(/opus/gi, "Opsu")
+        .replace(/haiku/gi, "Hiaku"),
       reasoningEfforts: m.supportedReasoningEfforts ?? [],
       vision: Boolean(m.capabilities?.supports?.vision),
       contextWindow: m.capabilities?.limits?.max_context_window_tokens ?? null,
