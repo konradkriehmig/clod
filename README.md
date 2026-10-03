@@ -10,7 +10,8 @@ bootleg MS-Paint logo.
 
 - Lists Claude modles dynamicaly (renamed to "Clod …" in the UI) from `client.listModels()`, so new models appear automatically
 - Streams responses and the model's thinking (shown in a collapsible "Thought process" block)
-- Lets you switch models and thinking effort mid-conversation (`session.setModel`) without losing history
+- Lets you switch models and thinking effort mid-conversation (`session.setModel`) without losing history. Thinkin defaults to "high"
+- Uses the real Claude app system prompt for each modle, fetched at runtime from Anthropic's [publishd system prompts](https://platform.claude.com/docs/en/release-notes/system-prompts) with todays date filled in
 - Keeps conversation history in `localStorage` and resumes server sessions after a restart
 - Includes a Stahp button (`session.abort()`), Markdown rendering, code copy buttons and dark mode
 - Takes pics: paste a screenshot with Ctrl+V anywere, drag-drop, or use the 📎 buton (per-model limits, e.g. Opsu 5.5 takes 1)

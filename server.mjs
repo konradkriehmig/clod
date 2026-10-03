@@ -13,8 +13,38 @@ const HOST = process.env.HOST || "127.0.0.1";
 const WORK_DIR = path.join(__dirname, ".clod-workdir");
 await mkdir(WORK_DIR, { recursive: true });
 
-// No system prompt at all: replace mode with empty content drops Copilot's built-in prompt too.
-const SYSTEM_PROMPT = "";
+// Use the Claude app's own system prompt, as published by Anthropic, fetched per model at runtime.
+const PROMPT_DOCS = "https://platform.claude.com/docs/en/release-notes/system-prompts";
+const promptCache = new Map(); // slug -> { at, text }
+
+async function fetchClaudeAppPrompt(modelId) {
+  const slug = modelId.replace(/\./g, "-");
+  const cached = promptCache.get(slug);
+  if (cached && Date.now() - cached.at < 24 * 3600_000) return cached.text;
+  try {
+    const res = await fetch(`${PROMPT_DOCS}/${slug}.md`, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const md = await res.text();
+    // Newest dated section comes first; it can be split across several ```text blocks.
+    const newest = md.split(/^## /m)[1] ?? "";
+    const text = [...newest.matchAll(/```text[^\n]*\n([\s\S]*?)\n```/g)].map((m) => m[1]).join("\n\n").trim();
+    if (!text) throw new Error("no prompt found");
+    promptCache.set(slug, { at: Date.now(), text });
+    return text;
+  } catch (e) {
+    console.warn(`Coudlnt fetch Claude app prompt for ${modelId}: ${e.message}`);
+    return cached?.text ?? "";
+  }
+}
+
+async function systemPromptFor(modelId) {
+  const now = new Date().toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" });
+  const prompt = await fetchClaudeAppPrompt(modelId);
+  if (!prompt) return `The current date is ${now}.`;
+  return prompt.includes("{{currentDateTime}}")
+    ? prompt.replaceAll("{{currentDateTime}}", now)
+    : `The current date is ${now}.\n\n${prompt}`;
+}
 
 const client = new CopilotClient({ workingDirectory: WORK_DIR, logLevel: "error" });
 await client.start();
@@ -45,14 +75,15 @@ async function getClaudeModels() {
   return models;
 }
 
-function sessionConfig(model, effort) {
+async function sessionConfig(model, effort) {
   return {
     model,
     ...(effort ? { reasoningEffort: effort } : {}),
     streaming: true,
     availableTools: [],
     enableSessionStore: false,
-    systemMessage: { mode: "replace", content: SYSTEM_PROMPT },
+    // Replace mode drops Copilot's built-in coding-agent prompt entirely.
+    systemMessage: { mode: "replace", content: await systemPromptFor(model) },
     onPermissionRequest: () => ({ kind: "denied-interactively-by-user" }),
   };
 }
@@ -72,13 +103,13 @@ async function getSession(conversationId, model, effort) {
   if (conversationId) {
     // After a server restart, try to pick the conversation back up.
     try {
-      session = await client.resumeSession(conversationId, sessionConfig(model, effort));
+      session = await client.resumeSession(conversationId, await sessionConfig(model, effort));
       await session.setModel(model, effort ? { reasoningEffort: effort } : undefined);
     } catch {
       session = undefined;
     }
   }
-  session ??= await client.createSession(sessionConfig(model, effort));
+  session ??= await client.createSession(await sessionConfig(model, effort));
   const entry = { session, model, effort, busy: false };
   conversations.set(session.sessionId, entry);
   return entry;
@@ -115,7 +146,8 @@ async function handleChat(req, res) {
   const models = await getClaudeModels();
   const modelInfo = models.find((m) => m.id === model);
   if (!modelInfo) return sendJson(res, 400, { error: `Unknwon Clod modle: ${model}` });
-  const validEffort = effort && modelInfo.reasoningEfforts.includes(effort) ? effort : undefined;
+  const defaultEffort = modelInfo.reasoningEfforts.includes("high") ? "high" : undefined;
+  const validEffort = effort && modelInfo.reasoningEfforts.includes(effort) ? effort : defaultEffort;
   if (!Array.isArray(images) || images.length > modelInfo.maxImages) {
     return sendJson(res, 400, { error: `${modelInfo.name} only takes ${modelInfo.maxImages} pic(s) at a tiem` });
   }

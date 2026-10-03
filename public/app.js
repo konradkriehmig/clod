@@ -66,11 +66,9 @@
     const m = models.find((x) => x.id === els.model.value);
     const efforts = m?.reasoningEfforts || [];
     els.effort.style.display = efforts.length ? "" : "none";
-    els.effort.innerHTML =
-      `<option value="">Defualt thinkin</option>` +
-      efforts.map((e) => `<option value="${e}">Thinkin: ${e}</option>`).join("");
-    const preferred = current?.effort ?? prefs.effort ?? "";
-    els.effort.value = efforts.includes(preferred) ? preferred : "";
+    els.effort.innerHTML = efforts.map((e) => `<option value="${e}">Thinkin: ${e}</option>`).join("");
+    const preferred = current?.effort || prefs.effort || "high";
+    els.effort.value = efforts.includes(preferred) ? preferred : efforts.includes("high") ? "high" : efforts[0] || "";
     updateAttachState();
   }
 
