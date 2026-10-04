@@ -35,6 +35,7 @@ its a chat thing in the browzer. u type words, Clod types words back. it uses ev
 - u can paste screenshots with Ctrl+V. or drag them. or the paperclip 📎. Opsu 5.5 can only look at 1 pic at a time bc its old and its eyes are tired
 - gives ur chats realy good names like "bike chayn"
 - VOICE MODE 🎙. press the mic and just tlak to Clod. it tlaks back (with ur browzers robot voice, works best in Edge). tap the orange blob to make it shut up. Anthropic doesnt put the voice system prompt online so Clod made up its own little one
+- can serch the interwebs 🔎 and read web pages. so it knows wat day it is AND wats going on. smarter then my uncle
 
 ## U need
 
@@ -71,5 +72,5 @@ u need [cloudflared](https://developers.cloudflare.com/cloudflare-one/connection
 
 ## How it wokrs (we think)
 
-- `server.mjs` is the brain. evry chat gets its own Copilot sesion. we took away all the tools so it cant touch ur files, it can only talk. the words get beamed to the browzer with Server-Sent Events (wires)
+- `server.mjs` is the brain. evry chat gets its own Copilot sesion. we took away all the tools except googlin (`web_search`) and readin web pages (`web_fetch`), so it cant touch ur files. web_fetch is only alowed to visit the reel internet, not ur computer or ur wifi stuff. the words get beamed to the browzer with Server-Sent Events (wires)
 - `public/` is the face. just HTML, CSS and JS. no build step. no framworks. no idea what those are anyway

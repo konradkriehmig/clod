@@ -2,6 +2,8 @@ import http from "node:http";
 import { readFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { timingSafeEqual } from "node:crypto";
+import { BlockList } from "node:net";
+import { lookup as dnsLookup } from "node:dns/promises";
 import { fileURLToPath } from "node:url";
 import { CopilotClient } from "@github/copilot-sdk";
 
@@ -85,16 +87,44 @@ async function getClaudeModels() {
   return models;
 }
 
+// Only let web_fetch reach the public internet. Clod can be shared online, so a prompt (or a sneaky
+// web page) must not be able to make it read this machine or the local network.
+const PRIVATE_NETS = new BlockList();
+for (const [net, bits] of [["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8], ["169.254.0.0", 16],
+  ["172.16.0.0", 12], ["192.0.0.0", 24], ["192.168.0.0", 16], ["198.18.0.0", 15], ["224.0.0.0", 3]]) {
+  PRIVATE_NETS.addSubnet(net, bits, "ipv4");
+}
+for (const [net, bits] of [["::", 127], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8]]) PRIVATE_NETS.addSubnet(net, bits, "ipv6");
+
+async function isPublicUrl(raw) {
+  try {
+    const url = new URL(raw);
+    if (!["http:", "https:"].includes(url.protocol)) return false;
+    const addrs = await dnsLookup(url.hostname.replace(/^\[|\]$/g, ""), { all: true });
+    return addrs.length > 0 && addrs.every(({ address, family }) => {
+      const mapped = family === 6 && address.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+      return mapped ? !PRIVATE_NETS.check(mapped[1], "ipv4") : !PRIVATE_NETS.check(address, family === 6 ? "ipv6" : "ipv4");
+    });
+  } catch {
+    return false;
+  }
+}
+
+async function onPermissionRequest(req) {
+  if (req.kind === "url" && (await isPublicUrl(req.url))) return { kind: "approve-once" };
+  return { kind: "reject" };
+}
+
 async function sessionConfig(model, effort) {
   return {
     model,
     ...(effort ? { reasoningEffort: effort } : {}),
     streaming: true,
-    availableTools: [],
+    availableTools: ["web_search", "web_fetch"],
     enableSessionStore: false,
     // Replace mode drops Copilot's built-in coding-agent prompt entirely.
     systemMessage: { mode: "replace", content: await systemPromptFor(model) },
-    onPermissionRequest: () => ({ kind: "denied-interactively-by-user" }),
+    onPermissionRequest,
   };
 }
 
@@ -197,6 +227,11 @@ async function handleChat(req, res) {
     session.on("assistant.message_delta", (e) => emit("delta", { text: e.data.deltaContent })),
     session.on("assistant.reasoning_delta", (e) => emit("thinking", { text: e.data.deltaContent })),
     session.on("assistant.message", (e) => emit("message", { text: e.data.content })),
+    session.on("tool.execution_start", (e) => {
+      const { toolName, arguments: args = {} } = e.data;
+      if (toolName === "web_search") emit("tool", { kind: "search", label: String(args.query || "") });
+      else if (toolName === "web_fetch") emit("tool", { kind: "fetch", label: String(args.url || "") });
+    }),
     session.on("session.error", (e) => finish("error", { error: e.data?.message || "Somthing went wrong" })),
     session.on("session.idle", () => finish("done", {})),
   );

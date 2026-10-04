@@ -205,10 +205,39 @@
     });
   }, 1800);
 
+  // "Serched the webs" list, like Claude's search chips.
+  function renderTools(wrap, content, msg, streaming) {
+    let box = wrap.querySelector(".tools");
+    if (!msg.tools?.length) return box?.remove();
+    if (!box) {
+      box = document.createElement("div");
+      box.className = "tools";
+      content.before(box);
+    }
+    box.innerHTML = "";
+    msg.tools.forEach((t, i) => {
+      const live = streaming && i === msg.tools.length - 1 && (msg.text || "").length === t.at;
+      const row = document.createElement("div");
+      row.className = "tool" + (live ? " live" : "");
+      if (t.kind === "search") {
+        row.textContent = `🔎 ${live ? "Serchin" : "Serched"} the webs for “${t.label}”${live ? "…" : ""}`;
+      } else {
+        let host = t.label;
+        try { host = new URL(t.label).hostname; } catch {}
+        row.append(`🌐 ${live ? "Readin" : "Red"} `);
+        const a = document.createElement("a");
+        a.textContent = host;
+        if (/^https?:\/\//i.test(t.label)) Object.assign(a, { href: t.label, target: "_blank", rel: "noopener noreferrer" });
+        row.append(a, live ? "…" : "");
+      }
+      box.append(row);
+    });
+  }
+
   function updateAssistant(wrap, msg, streaming) {
     wrap.classList.toggle("streaming", streaming);
     const status = wrap.querySelector(".status");
-    const waiting = streaming && !msg.text && !msg.thinking;
+    const waiting = streaming && !msg.text && !msg.thinking && !msg.tools?.length;
     if (waiting && status.hidden) status.textContent = randomFiller();
     status.hidden = !waiting;
     const thinking = wrap.querySelector(".thinking");
@@ -222,6 +251,7 @@
       thinking.querySelector(".body").textContent = msg.thinking;
     }
     const content = wrap.querySelector(".content");
+    renderTools(wrap, content, msg, streaming);
     if (msg.error) {
       content.textContent = `⚠ ${msg.error}`;
     } else {
@@ -523,6 +553,10 @@
           if (event === "session") convo.serverId = data.conversationId;
           else if (event === "delta") reply.text += data.text;
           else if (event === "thinking") reply.thinking += data.text;
+          else if (event === "tool") {
+            if (reply.text && !reply.text.endsWith("\n\n")) reply.text += "\n\n";
+            (reply.tools ??= []).push({ kind: data.kind, label: data.label, at: reply.text.length });
+          }
           else if (event === "message") {
             // Final full message; only needed if no deltas arrived.
             if (!reply.text && data.text) reply.text = data.text;

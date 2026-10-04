@@ -302,3 +302,9 @@ body.dragging #composer { outline: 3px dashed var(--accent); outline-offset: 4px
 
 .content .math, .content .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
 
+
+/* Web search activity */
+.tools { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-family: var(--sans); font-size: 14px; color: var(--muted); }
+.tools .tool { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tools .tool.live { color: var(--accent-dark); animation: shimmer 1.8s ease-in-out infinite; }
+.tools a { color: inherit; text-decoration: underline dotted; }
