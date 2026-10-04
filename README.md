@@ -9,7 +9,7 @@ Equipped with the latest Clod models: Sonet, Opsu, and Hiaku
 <img width="403" height="344" alt="image" src="https://github.com/user-attachments/assets/d1b6436a-4b7b-4202-aad1-065ade10a884" />
 
 
-[Readme created by Clod]
+## Readme created by Clod
 
 A browzer chat app for evry Claude modle available to your GitHub Copilot account, built on the
 [GitHub Copilot SDK](https://www.npmjs.com/package/@github/copilot-sdk). It comes with a proudly
