@@ -8,6 +8,11 @@ Equipped with the latest Clod models: Sonet, Opsu, and Hiaku
 
 <img width="403" height="344" alt="image" src="https://github.com/user-attachments/assets/d1b6436a-4b7b-4202-aad1-065ade10a884" />
 
+Transparent thought process
+
+<img width="1023" height="368" alt="image" src="https://github.com/user-attachments/assets/1a35e3e5-dd60-4a5c-8062-bdaf75e80794" />
+
+
 
 ## Readme created by Clod
 
