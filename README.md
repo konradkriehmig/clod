@@ -8,9 +8,10 @@ Equipped with the latest Clod models: Sonet, Opsu, and Hiaku
 
 <img width="403" height="344" alt="image" src="https://github.com/user-attachments/assets/d1b6436a-4b7b-4202-aad1-065ade10a884" />
 
-Transparent thought process
+Transparent and rigorous thought process
 
-<img width="1023" height="368" alt="image" src="https://github.com/user-attachments/assets/1a35e3e5-dd60-4a5c-8062-bdaf75e80794" />
+<img width="1214" height="1450" alt="image" src="https://github.com/user-attachments/assets/d2c9ecca-dde2-4ef5-88f1-44f2ed8676e7" />
+
 
 
 
