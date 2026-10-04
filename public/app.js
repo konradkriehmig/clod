@@ -31,7 +31,7 @@
   const savePrefs = () => localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
   const modelName = (id) => models.find((m) => m.id === id)?.name || id;
-  const effortName = (e) => (e === "medium" ? "mid" : e);
+  const effortName = (e) => ({ medium: "mid", max: "maxx" })[e] || e;
 
   function setGreeting() {
     const h = new Date().getHours();
