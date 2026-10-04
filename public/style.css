@@ -29,7 +29,7 @@
     --bg: #151515;
     --sidebar: #111111;
     --panel: #20201f;
-    --text: #e5e3d8;
+    --text: #f0eee6;
     --muted: #9c9a93;
     --border: #2c2c2b;
     --ring: #444444;
@@ -155,7 +155,7 @@ body.has-messages #messages { display: block; }
 .msg.assistant { display: flex; gap: 12px; }
 .msg.assistant .avatar { width: 28px; height: 28px; flex-shrink: 0; margin-top: 2px; }
 .msg.assistant.streaming .avatar { animation: wobble 0.8s ease-in-out infinite; }
-.msg.assistant .content { flex: 1; min-width: 0; font-family: var(--serif); font-size: 18px; }
+.msg.assistant .content { flex: 1; min-width: 0; font-family: var(--serif); font-size: 18.5px; line-height: 1.5; letter-spacing: -0.018em; font-weight: 450; }
 .msg.assistant .content > :first-child { margin-top: 0; }
 .msg.assistant .meta { font-family: var(--sans); font-size: 12px; color: var(--muted); margin-top: 6px; display: flex; gap: 10px; }
 .msg.assistant .meta button { background: none; border: none; cursor: pointer; color: var(--muted); padding: 0; font-size: 12px; }
@@ -308,3 +308,4 @@ body.dragging #composer { outline: 3px dashed var(--accent); outline-offset: 4px
 .tools .tool { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tools .tool.live { color: var(--accent-dark); animation: shimmer 1.8s ease-in-out infinite; }
 .tools a { color: inherit; text-decoration: underline dotted; }
+.content code, .content pre, .content table { letter-spacing: 0; font-weight: 400; }
