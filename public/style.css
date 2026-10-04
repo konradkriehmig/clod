@@ -5,32 +5,38 @@
 @font-face { font-family: "Clod Sans"; font-style: italic; font-weight: 400 700; font-display: swap; src: url(fonts/DMSans-italic.woff2) format("woff2"); }
 
 :root {
-  --bg: #f5f2ea;
-  --sidebar: #ece8dd;
+  --bg: #faf9f5;
+  --sidebar: #f5f4ed;
   --col: 960px;
   --panel: #ffffff;
-  --text: #2a2722;
-  --muted: #7b756a;
-  --border: #ddd6c6;
-  --accent: #ff7b1c;
-  --accent-dark: #c94f0b;
-  --user-bubble: #e8e2d4;
-  --code-bg: #2b2925;
+  --text: #141413;
+  --muted: #73726c;
+  --border: #e3e1d8;
+  --ring: #d6d4cb;
+  --hover: #ebe9e1;
+  --accent: #d97757;
+  --accent-dark: #c6613f;
+  --user-bubble: #f0eee6;
+  --code-bg: #1f1e1d;
   --serif: "Clod Serif", Georgia, "Times New Roman", serif;
   --sans: "Clod Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --trashy: "Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive;
 }
 
+/* Sampled from the real Claude app's dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #262522;
-    --sidebar: #1e1d1b;
-    --panel: #302f2b;
-    --text: #ece9e1;
-    --muted: #a19b8f;
-    --border: #3d3b36;
-    --user-bubble: #3a3833;
-    --code-bg: #171614;
+    --bg: #151515;
+    --sidebar: #111111;
+    --panel: #20201f;
+    --text: #e5e3d8;
+    --muted: #9c9a93;
+    --border: #2c2c2b;
+    --ring: #444444;
+    --hover: #343434;
+    --accent-dark: #e0896b;
+    --user-bubble: #2b2b2a;
+    --code-bg: #0d0d0d;
   }
 }
 
@@ -80,7 +86,7 @@ body.sidebar-hidden #sidebar { margin-left: -270px; }
   border-radius: 8px;
   color: var(--muted);
 }
-.icon-btn:hover { background: var(--border); }
+.icon-btn:hover { background: var(--hover); }
 .icon-btn.floating { position: absolute; top: 12px; left: 12px; display: none; }
 body.sidebar-hidden .icon-btn.floating { display: block; }
 
@@ -95,7 +101,7 @@ body.sidebar-hidden .icon-btn.floating { display: block; }
   width: 24px; height: 24px; border-radius: 50%;
   background: var(--accent); color: #fff; font-size: 14px;
 }
-.new-chat:hover { background: var(--border); }
+.new-chat:hover { background: var(--hover); }
 .section-label { font-size: 12px; color: var(--muted); padding: 10px 10px 2px; }
 #conversation-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
 .conv {
@@ -103,7 +109,7 @@ body.sidebar-hidden .icon-btn.floating { display: block; }
   border-radius: 8px; cursor: pointer;
   padding: 7px 10px; font-size: 14px;
 }
-.conv:hover, .conv.active { background: var(--border); }
+.conv:hover, .conv.active { background: var(--hover); }
 .conv .title { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .conv .del { visibility: hidden; background: none; border: none; cursor: pointer; color: var(--muted); padding: 0 4px; }
 .conv:hover .del { visibility: visible; }
@@ -195,7 +201,7 @@ body.has-messages #messages { display: block; }
   margin: 0 auto 6px;
   width: min(var(--col), calc(100% - 32px));
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--ring);
   border-radius: 20px;
   padding: 12px 12px 8px 16px;
   box-shadow: 0 2px 12px #0000000d;
@@ -212,7 +218,7 @@ body:not(.has-messages) #composer { margin-top: 28px; }
   background: transparent; border: 1px solid transparent; border-radius: 8px;
   padding: 4px 6px; font-size: 13px; color: var(--muted); cursor: pointer;
 }
-.pickers select:hover { border-color: var(--border); color: var(--text); }
+.pickers select:hover { border-color: var(--ring); color: var(--text); }
 .pickers select option { background: var(--panel); color: var(--text); }
 .send {
   width: 34px; height: 34px; border-radius: 10px; border: none; cursor: pointer;
@@ -226,7 +232,7 @@ body:not(.has-messages) #composer { margin-top: 28px; }
   background: none; border: 1px solid transparent; border-radius: 8px; cursor: pointer;
   font-size: 15px; padding: 2px 7px;
 }
-.attach:hover { border-color: var(--border); }
+.attach:hover { border-color: var(--ring); }
 .attach:disabled { opacity: .35; cursor: default; }
 #attachments { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .thumb { position: relative; width: 64px; height: 64px; }
@@ -265,15 +271,15 @@ body.dragging #composer { outline: 3px dashed var(--accent); outline-offset: 4px
 #voice-mode[hidden] { display: none; }
 #voice-orb {
   width: 190px; height: 190px; border-radius: 50%; border: none; cursor: pointer; padding: 34px;
-  background: radial-gradient(circle at 35% 30%, #ffd2ae, var(--accent) 60%, var(--accent-dark));
-  box-shadow: 0 0 0 0 rgba(255, 123, 28, .45); transition: transform .2s;
+  background: radial-gradient(circle at 35% 30%, #f2c3b0, var(--accent) 60%, var(--accent-dark));
+  box-shadow: 0 0 0 0 rgba(217, 119, 87, .45); transition: transform .2s;
 }
 #voice-orb img { width: 100%; height: 100%; filter: drop-shadow(0 2px 0 #0003); }
 #voice-mode.listening #voice-orb { animation: orb-listen 1.6s ease-in-out infinite; }
 #voice-mode.thinking #voice-orb { animation: orb-think 2.2s linear infinite; }
 #voice-mode.speaking #voice-orb { animation: orb-talk .45s ease-in-out infinite alternate; }
 #voice-mode.muted #voice-orb { filter: grayscale(.8); animation: none; }
-@keyframes orb-listen { 50% { box-shadow: 0 0 0 26px rgba(255, 123, 28, 0); transform: scale(1.04); } }
+@keyframes orb-listen { 50% { box-shadow: 0 0 0 26px rgba(217, 119, 87, 0); transform: scale(1.04); } }
 @keyframes orb-think { to { transform: rotate(360deg); } }
 @keyframes orb-talk { from { transform: scale(.96) rotate(-3deg); } to { transform: scale(1.07) rotate(3deg); } }
 #voice-status { font-family: var(--trashy); font-size: 22px; color: var(--accent-dark); }

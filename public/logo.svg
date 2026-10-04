@@ -12,7 +12,7 @@
       <path d="M50 52 L24 14" stroke-width="7"/>
     </g>
     <!-- the wobbly rays, deliberately uneven -->
-    <g stroke="#ff7b1c" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <g stroke="#d97757" stroke-linecap="round" stroke-linejoin="round" fill="none">
       <path d="M50 52 Q46 30 49 9" stroke-width="13"/>
       <path d="M50 52 Q70 45 88 31" stroke-width="9"/>
       <path d="M50 52 Q63 70 84 83" stroke-width="15"/>
@@ -22,11 +22,11 @@
       <path d="M50 52 Q40 30 24 14" stroke-width="7"/>
     </g>
     <!-- paint bucket spill blob in the middle -->
-    <path d="M38 49 C36 38 55 36 61 44 C68 52 60 66 49 63 C41 61 39 57 38 49 Z" fill="#ff9a3c" stroke="#c94f0b" stroke-width="2.5"/>
+    <path d="M38 49 C36 38 55 36 61 44 C68 52 60 66 49 63 C41 61 39 57 38 49 Z" fill="#e8957a" stroke="#b85a3c" stroke-width="2.5"/>
     <!-- googly eye -->
     <circle cx="49" cy="50" r="8" fill="#fff" stroke="#222" stroke-width="2"/>
     <circle cx="52" cy="53" r="3.6" fill="#111"/>
     <!-- smudge -->
-    <path d="M70 14 q4 -3 7 1" stroke="#ff7b1c" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M70 14 q4 -3 7 1" stroke="#d97757" stroke-width="3" fill="none" stroke-linecap="round"/>
   </g>
 </svg>
