@@ -32,7 +32,7 @@ its a chat thing in the browzer. u type words, Clod types words back. it uses ev
 - big Stahp button if Clod is talking to much
 - copy buttons on the code. also dark mode for vampires
 - u can paste screenshots with Ctrl+V. or drag them. or the paperclip 📎. Opsu 5.5 can only look at 1 pic at a time bc its old and its eyes are tired
-- gives ur chats realy dumb names like "bike chayn"
+- gives ur chats realy good names like "bike chayn"
 
 ## U need
 
