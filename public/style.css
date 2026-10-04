@@ -287,3 +287,6 @@ body.dragging #composer { outline: 3px dashed var(--accent); outline-offset: 4px
 }
 #voice-end { background: #d9412b; color: #fff; border: none; }
 #voice-mode.muted #voice-mute { background: var(--text); color: var(--bg); }
+
+.content .math, .content .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+

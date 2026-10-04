@@ -6,6 +6,7 @@ import { CopilotClient } from "@github/copilot-sdk";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "public");
+const KATEX_DIR = path.dirname(fileURLToPath(import.meta.resolve("katex/dist/katex.min.js")));
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || "127.0.0.1";
 
@@ -262,14 +263,19 @@ const MIME = {
   ".css": "text/css; charset=utf-8",
   ".svg": "image/svg+xml",
   ".woff2": "font/woff2",
+  ".woff": "font/woff",
+  ".ttf": "font/ttf",
   ".ico": "image/svg+xml",
 };
 
 async function serveStatic(req, res) {
   const urlPath = decodeURIComponent(new URL(req.url, "http://x").pathname);
-  const rel = urlPath === "/" ? "index.html" : urlPath === "/favicon.ico" ? "logo.svg" : urlPath.slice(1);
-  const file = path.normalize(path.join(PUBLIC_DIR, rel));
-  if (!file.startsWith(PUBLIC_DIR + path.sep)) return sendJson(res, 403, { error: "Forbidden" });
+  // KaTeX (math rendering) is served straight from node_modules, so there's no CDN.
+  const [root, rel] = urlPath.startsWith("/vendor/katex/")
+    ? [KATEX_DIR, urlPath.slice("/vendor/katex/".length)]
+    : [PUBLIC_DIR, urlPath === "/" ? "index.html" : urlPath === "/favicon.ico" ? "logo.svg" : urlPath.slice(1)];
+  const file = path.normalize(path.join(root, rel));
+  if (!file.startsWith(root + path.sep)) return sendJson(res, 403, { error: "Forbidden" });
   try {
     const data = await readFile(file);
     res.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "application/octet-stream" });

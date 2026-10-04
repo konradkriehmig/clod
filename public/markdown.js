@@ -3,20 +3,35 @@
   const escapeHtml = (s) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+  function renderMath(tex, display) {
+    if (!window.katex) return escapeHtml(display ? `$$${tex}$$` : `$${tex}$`);
+    try {
+      return katex.renderToString(tex, { displayMode: display, throwOnError: false, output: "htmlAndMathml" });
+    } catch {
+      return escapeHtml(tex);
+    }
+  }
+
+  // Inline code and math are swapped out for placeholders first, so markdown rules don't mangle them.
+  const MATH_INLINE =
+    /\$\$([^$]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|(?<![\\$\w])\$(?![\s$])([^$\n]*?[^\s\\$])\$(?![\d$])/g;
+
   function inline(text) {
-    const codes = [];
-    let s = escapeHtml(text).replace(/`([^`\n]+)`/g, (_, c) => {
-      codes.push(c);
-      return `\u0000${codes.length - 1}\u0000`;
-    });
-    s = s
+    const slots = [];
+    const stash = (html) => `\u0000${slots.push(html) - 1}\u0000`;
+    let s = text
+      .replace(/`([^`\n]+)`/g, (_, c) => stash(`<code>${escapeHtml(c)}</code>`))
+      .replace(MATH_INLINE, (_, dd, br, pa, d) =>
+        stash(dd != null || br != null ? renderMath((dd ?? br).trim(), true) : renderMath((pa ?? d).trim(), false)),
+      );
+    s = escapeHtml(s)
       .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-      .replace(/__([^_]+)__/g, "<strong>$1</strong>")
-      .replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?!\w)/g, "$1<em>$2</em>")
-      .replace(/(^|[^_\w])_([^_\s][^_]*?)_(?!\w)/g, "$1<em>$2</em>")
+      .replace(/\*\*(?=\S)([\s\S]+?)(?<=\S)\*\*/g, "<strong>$1</strong>")
+      .replace(/__(?=\S)([\s\S]+?)(?<=\S)__(?!\w)/g, "<strong>$1</strong>")
+      .replace(/(^|[^*\w])\*(?=[^*\s])([\s\S]*?[^*\s])\*(?![*\w])/g, "$1<em>$2</em>")
+      .replace(/(^|[^_\w])_(?=[^_\s])([\s\S]*?[^_\s])_(?!\w)/g, "$1<em>$2</em>")
       .replace(/~~([^~]+)~~/g, "<del>$1</del>");
-    return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`);
+    return s.replace(/\u0000(\d+)\u0000/g, (_, i) => slots[i]);
   }
 
   const isTableSep = (l) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(l);
@@ -31,7 +46,15 @@
       if (!line.trim()) { i++; continue; }
 
       let m;
-      if ((m = line.match(/^(#{1,6})\s+(.*)$/))) {
+      if (/^\s*(\$\$|\\\[)/.test(line) && !/^\s*(\$\$[^$]+\$\$|\\\[.+\\\])\s*$/.test(line)) {
+        // Multi-line display math: $$ ... $$ or \[ ... \]
+        const close = /^\s*\$\$/.test(line) ? "$$" : "\\]";
+        const buf = [line.trim().slice(2)];
+        i++;
+        while (i < lines.length && !lines[i].includes(close)) buf.push(lines[i++]);
+        if (i < lines.length) buf.push(lines[i++].split(close)[0]);
+        out.push(`<div class="math">${renderMath(buf.join("\n").trim(), true)}</div>`);
+      } else if ((m = line.match(/^(#{1,6})\s+(.*)$/))) {
         out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`);
         i++;
       } else if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) {
@@ -73,12 +96,12 @@
         while (
           i < lines.length &&
           lines[i].trim() &&
-          !/^(#{1,6}\s|\s*>|\s*([-*+]|\d+[.)])\s+)/.test(lines[i]) &&
+          !/^(#{1,6}\s|\s*>|\s*([-*+]|\d+[.)])\s+|\s*(\$\$|\\\[)\s*$)/.test(lines[i]) &&
           !(lines[i].includes("|") && i + 1 < lines.length && isTableSep(lines[i + 1]))
         ) {
           p.push(lines[i++]);
         }
-        out.push(`<p>${p.map(inline).join("<br>")}</p>`);
+        out.push(`<p>${inline(p.join("\n")).replace(/\n/g, "<br>")}</p>`);
       }
     }
     return out.join("");
