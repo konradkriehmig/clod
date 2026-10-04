@@ -309,3 +309,8 @@ body.dragging #composer { outline: 3px dashed var(--accent); outline-offset: 4px
 .tools .tool.live { color: var(--accent-dark); animation: shimmer 1.8s ease-in-out infinite; }
 .tools a { color: inherit; text-decoration: underline dotted; }
 .content code, .content pre, .content table { letter-spacing: 0; font-weight: 400; }
+
+/* Thin, trackless scrollbars like Claude's */
+* { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+:root { --scroll-thumb: rgba(20, 20, 19, 0.2); }
+@media (prefers-color-scheme: dark) { :root { --scroll-thumb: rgba(229, 227, 216, 0.18); } }
