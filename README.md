@@ -8,6 +8,14 @@ Equipped with the latest Clod models: Sonet, Opsu, and Hiaku
 
 <img width="403" height="344" alt="image" src="https://github.com/user-attachments/assets/d1b6436a-4b7b-4202-aad1-065ade10a884" />
 
+Transparent thought process
+
+<img width="1023" height="368" alt="image" src="https://github.com/user-attachments/assets/1a35e3e5-dd60-4a5c-8062-bdaf75e80794" />
+
+
+
+## Readme created by Clod
+
 its a chat thing in the browzer. u type words, Clod types words back. it uses evry Claude modle ur GitHub Copilot has, thru the [GitHub Copilot SDK](https://www.npmjs.com/package/@github/copilot-sdk) (big computer word, dont worry abt it). the logo was made in MS Paint by a profesional (me).
 
 > Clod is not Anthropic. Clod is not GitHub. Clod is just Clod. pls dont sue Clod.
