@@ -287,6 +287,11 @@ body.dragging #composer { outline: 3px dashed var(--accent); outline-offset: 4px
 }
 #voice-end { background: #d9412b; color: #fff; border: none; }
 #voice-mode.muted #voice-mute { background: var(--text); color: var(--bg); }
+.voice-pick { display: flex; align-items: center; gap: 8px; font-family: var(--trashy); font-size: 14px; color: var(--muted); }
+#voice-select {
+  max-width: 260px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--panel); color: var(--text); font: inherit; font-family: var(--sans, sans-serif);
+}
 
 .content .math, .content .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
 

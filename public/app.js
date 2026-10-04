@@ -600,15 +600,62 @@
     voiceEls.btn.style.opacity = ".35";
   }
 
+  const VOICE_KEY = "clod.voice";
   function pickTtsVoice() {
     const all = speechSynthesis.getVoices();
     const lang = (navigator.language || "en-US").slice(0, 2);
     const mine = all.filter((v) => v.lang.startsWith(lang));
     voice.ttsVoice =
+      all.find((v) => v.voiceURI === localStorage.getItem(VOICE_KEY)) ||
       mine.find((v) => /natural/i.test(v.name) && /aria|jenny|ava|emma|sonia/i.test(v.name)) ||
       mine.find((v) => /natural|online|google/i.test(v.name)) ||
       mine.find((v) => v.default) || mine[0] || all[0] || null;
+    renderVoiceSelect(all, lang);
   }
+
+  // Voices in your language first, then the rest.
+  function renderVoiceSelect(all, lang) {
+    const sel = $("#voice-select");
+    sel.innerHTML = "";
+    const groups = [
+      ["Ur langwage", all.filter((v) => v.lang.startsWith(lang))],
+      ["Forin", all.filter((v) => !v.lang.startsWith(lang))],
+    ];
+    for (const [label, list] of groups) {
+      if (!list.length) continue;
+      const g = document.createElement("optgroup");
+      g.label = label;
+      for (const v of [...list].sort((a, b) => a.name.localeCompare(b.name))) {
+        const name = v.name.replace(/^(Microsoft|Google)\s+/, "");
+        const o = new Option(/\(.+\)/.test(name) ? name : `${name} (${v.lang})`, v.voiceURI);
+        o.selected = v === voice.ttsVoice;
+        g.append(o);
+      }
+      sel.append(g);
+    }
+    sel.disabled = !all.length;
+  }
+
+  $("#voice-select").addEventListener("change", (e) => {
+    const v = speechSynthesis.getVoices().find((x) => x.voiceURI === e.target.value);
+    if (!v) return;
+    voice.ttsVoice = v;
+    localStorage.setItem(VOICE_KEY, v.voiceURI);
+    // Preview it while Clod is just listening; pause the mic so it doesn't hear itself.
+    if (voice.on && voice.replyDone && !voice.queue) {
+      stopRec();
+      speechSynthesis.cancel();
+      const gen = voice.gen;
+      const u = new SpeechSynthesisUtterance("Hi, I'm Clod. This is what I sound like now.");
+      u.voice = v;
+      u.rate = 1.05;
+      setVoiceState("speaking", "Tlaking…");
+      u.onend = u.onerror = () => {
+        if (voice.on && voice.gen === gen && voice.replyDone && !voice.queue) listen();
+      };
+      speechSynthesis.speak(u);
+    }
+  });
   if (window.speechSynthesis) {
     pickTtsVoice();
     speechSynthesis.addEventListener?.("voiceschanged", pickTtsVoice);
