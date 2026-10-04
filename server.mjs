@@ -1,6 +1,7 @@
 import http from "node:http";
 import { readFile, mkdir } from "node:fs/promises";
 import path from "node:path";
+import { timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { CopilotClient } from "@github/copilot-sdk";
 
@@ -285,9 +286,40 @@ async function serveStatic(req, res) {
   }
 }
 
+// Optional access key. If CLOD_KEY is set, every request needs it, either as ?key=... (which then sets a
+// cookie) or as the cookie itself. `npm run share` sets this before putting Clod on the internet.
+const ACCESS_KEY = process.env.CLOD_KEY || "";
+const keyMatches = (k) =>
+  typeof k === "string" && k.length === ACCESS_KEY.length && timingSafeEqual(Buffer.from(k), Buffer.from(ACCESS_KEY));
+
+function checkAccess(req, res, url) {
+  if (!ACCESS_KEY) return true;
+  const qKey = url.searchParams.get("key");
+  if (keyMatches(qKey)) {
+    url.searchParams.delete("key");
+    const secure = req.headers["x-forwarded-proto"] === "https" ? "; Secure" : "";
+    res.writeHead(302, {
+      "Set-Cookie": `clod_key=${encodeURIComponent(qKey)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}`,
+      Location: url.pathname + url.search,
+    });
+    res.end();
+    return false;
+  }
+  const cookie = (req.headers.cookie || "").match(/(?:^|;\s*)clod_key=([^;]*)/);
+  if (cookie && keyMatches(decodeURIComponent(cookie[1]))) return true;
+  if (url.pathname.startsWith("/api/")) sendJson(res, 401, { error: "No key, no Clod" });
+  else {
+    res.writeHead(401, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(`<!doctype html><meta name="viewport" content="width=device-width"><body style="font-family:'Comic Sans MS',cursive;background:#262624;color:#eee;display:grid;place-items:center;height:90vh"><div style="text-align:center"><h1>🔒 Clod is privite</h1><p>U need the speshul link with the key in it.</p></div>`);
+  }
+  return false;
+}
+
 const server = http.createServer(async (req, res) => {
   try {
-    const { pathname } = new URL(req.url, "http://x");
+    const url = new URL(req.url, "http://x");
+    const { pathname } = url;
+    if (!checkAccess(req, res, url)) return;
     if (req.method === "GET" && pathname === "/api/models") {
       return sendJson(res, 200, { models: await getClaudeModels() });
     }

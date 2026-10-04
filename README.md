@@ -51,12 +51,23 @@ npm start
 
 knobs u can turn:
 
-| Knob   | Normal      | Wat it does           |
-| ------ | ----------- | --------------------- |
-| `PORT` | `3000`      | the numbr at the end  |
-| `HOST` | `127.0.0.1` | where it lives        |
+| Knob       | Normal      | Wat it does                                  |
+| ---------- | ----------- | -------------------------------------------- |
+| `PORT`     | `3000`      | the numbr at the end                         |
+| `HOST`     | `127.0.0.1` | where it lives                               |
+| `CLOD_KEY` | nothing     | secret pasword. no key in link = no Clod     |
 
-⚠ Clod has no pasword and uses YOUR Copilot account. keep it on ur own computer (`127.0.0.1`) or strangers will talk to Clod on ur bill
+⚠ plain `npm start` has no pasword and uses YOUR Copilot account. keep it on ur own computer (`127.0.0.1`) or strangers will talk to Clod on ur bill
+
+## Put Clod on the interwebs (for ur fone)
+
+the voice thing needs https or the browzer wont give Clod ur microfone. so:
+
+```bash
+npm run share
+```
+
+u need [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) installed (`winget install Cloudflare.cloudflared`). it makes a free random `https://something.trycloudflare.com` link with a secret key glued on the end, and a QR code so u can point ur fone at the screen like a boomer. the link changes evry time. anyone u give the link to can use ur Copilot so dont put it on twitter. Ctrl+C makes Clod go offline again
 
 ## How it wokrs (we think)
 

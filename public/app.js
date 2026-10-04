@@ -805,6 +805,14 @@
   $("#new-chat").addEventListener("click", newChat);
   $("#toggle-sidebar").addEventListener("click", () => document.body.classList.add("sidebar-hidden"));
   $("#open-sidebar").addEventListener("click", () => document.body.classList.remove("sidebar-hidden"));
+  // On phones the sidebar sits on top of the chat, so keep it closed unless asked for.
+  const isNarrow = () => matchMedia("(max-width: 720px)").matches;
+  if (isNarrow()) document.body.classList.add("sidebar-hidden");
+  $("#sidebar").addEventListener("click", (e) => {
+    if (isNarrow() && !e.target.closest(".del") && e.target.closest(".conv, #new-chat")) {
+      document.body.classList.add("sidebar-hidden");
+    }
+  });
 
   setGreeting();
   renderList();
