@@ -24,13 +24,71 @@
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(conversations));
     } catch {
-      // Storage full (probably pics): drop old thumbnails and try again.
+      // Storage full (probably pics): drop old thumbnails and try again. The server still has them.
       conversations.forEach((c) => c !== current && c.messages.forEach((m) => delete m.images));
       try { localStorage.setItem(STORE_KEY, JSON.stringify(conversations)); } catch {}
     }
+    scheduleSync();
   };
+
+  // ---------- Server sync (so chats show up in every browser) ----------
+  conversations.forEach((c) => (c.id = String(c.id).replace(/[^\w-]/g, "-")));
+  const synced = new Map(); // id -> JSON last stored on the server
+  let syncTimer = null;
+  let syncReady = false;
+  function scheduleSync() {
+    if (!syncReady) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(pushChats, 400);
+  }
+  async function pushChats() {
+    for (const c of conversations) {
+      if (!c.messages?.length) continue;
+      const json = JSON.stringify(c);
+      if (synced.get(c.id) === json) continue;
+      try {
+        const r = await fetch(`/api/chats/${c.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: json,
+        });
+        if (r.ok) synced.set(c.id, json);
+      } catch {}
+    }
+  }
+  async function pullChats() {
+    try {
+      const r = await fetch("/api/chats");
+      if (!r.ok) throw new Error();
+      const { chats, deleted } = await r.json();
+      const gone = new Set(deleted);
+      let currentChanged = !!current && gone.has(current.id);
+      conversations = conversations.filter((c) => !gone.has(c.id));
+      for (const s of chats) {
+        const local = conversations.find((c) => c.id === s.id);
+        if (!local) conversations.push(s);
+        else if (
+          !(local === current && inflight) &&
+          ((s.updatedAt || 0) > (local.updatedAt || 0) ||
+            (s.updatedAt === local.updatedAt && s.dumbTitle === 2 && local.dumbTitle !== 2))
+        ) {
+          Object.assign(local, s);
+          if (local === current) currentChanged = true;
+        }
+        synced.set(s.id, JSON.stringify(conversations.find((c) => c.id === s.id)));
+      }
+      syncReady = true;
+      save();
+      if (currentChanged) openConversation(current.id);
+      else renderList();
+    } catch {
+      setTimeout(pullChats, 5000);
+    }
+  }
+  addEventListener("focus", () => syncReady && !inflight && pullChats());
   const savePrefs = () => localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
-  const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
+  const uid = () =>
+    crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
   const modelName = (id) => models.find((m) => m.id === id)?.name || id;
   const effortName = (e) => ({ medium: "mid", xhigh: "highest", max: "maxxed" })[e] || e;
 
@@ -113,6 +171,8 @@
     const c = conversations.find((x) => x.id === id);
     if (!c || !confirm(`Delet "${c.title || "New chatt"}"?`)) return;
     if (c.serverId) fetch(`/api/conversations/${c.serverId}`, { method: "DELETE" }).catch(() => {});
+    fetch(`/api/chats/${c.id}`, { method: "DELETE" }).catch(() => {});
+    synced.delete(c.id);
     conversations = conversations.filter((x) => x.id !== id);
     save();
     if (current?.id === id) newChat();
@@ -919,5 +979,6 @@
   setGreeting();
   renderList();
   setBusy(false);
+  pullChats();
   loadModels().then(retitleOldChats);
 })();

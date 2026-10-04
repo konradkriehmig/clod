@@ -29,7 +29,7 @@ its a chat thing in the browzer. u type words, Clod types words back. it uses ev
 - u can change the modle in the middle and it still remembers stuff (most of the time)
 - thinkin is set to "high" bc we want it SMART
 - uses the reel Claude app system prompt, Clod downloads it from Anthropic evry day and also tells it the date so it knows what day it is
-- remembers ur chats in the browzer. dont clear ur cookies or it forgets everything
+- remembers ur chats on the computer that runs Clod (in `.clod-data/`), so they show up on ur fone and evry browzer too. delete that folder and its all gone foreva
 - big Stahp button if Clod is talking to much
 - copy buttons on the code. also dark mode for vampires
 - u can paste screenshots with Ctrl+V. or drag them. or the paperclip 📎. Opsu 5.5 can only look at 1 pic at a time bc its old and its eyes are tired

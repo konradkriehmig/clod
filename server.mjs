@@ -1,5 +1,5 @@
 import http from "node:http";
-import { readFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, readdir, rename, rm, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { timingSafeEqual } from "node:crypto";
 import { BlockList } from "node:net";
@@ -16,6 +16,48 @@ const HOST = process.env.HOST || "127.0.0.1";
 // Sessions run in an empty scratch dir so the model never sees this repo.
 const WORK_DIR = path.join(__dirname, ".clod-workdir");
 await mkdir(WORK_DIR, { recursive: true });
+
+// Chat history lives on disk so every browser (localhost, 127.0.0.1, the share link, phones) sees the same chats.
+const CHATS_DIR = path.join(__dirname, ".clod-data", "chats");
+const DELETED_FILE = path.join(__dirname, ".clod-data", "deleted.json");
+await mkdir(CHATS_DIR, { recursive: true });
+const chatFile = (id) => path.join(CHATS_DIR, `${id}.json`);
+const validChatId = (id) => /^[\w-]{1,80}$/.test(id);
+
+async function readDeleted() {
+  try {
+    return JSON.parse(await readFile(DELETED_FILE, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+async function listChats() {
+  const chats = [];
+  for (const name of await readdir(CHATS_DIR)) {
+    if (!name.endsWith(".json")) continue;
+    try {
+      chats.push(JSON.parse(await readFile(path.join(CHATS_DIR, name), "utf8")));
+    } catch {}
+  }
+  return { chats, deleted: await readDeleted() };
+}
+
+async function saveChat(id, chat) {
+  if ((await readDeleted()).includes(id)) return;
+  const tmp = `${chatFile(id)}.${process.hrtime.bigint()}.tmp`;
+  await writeFile(tmp, JSON.stringify({ ...chat, id }));
+  await rename(tmp, chatFile(id));
+}
+
+async function deleteChat(id) {
+  await rm(chatFile(id), { force: true });
+  const deleted = await readDeleted();
+  if (!deleted.includes(id)) {
+    deleted.push(id);
+    await writeFile(DELETED_FILE, JSON.stringify(deleted.slice(-5000)));
+  }
+}
 
 // Use the Claude app's own system prompt, as published by Anthropic, fetched per model at runtime.
 const PROMPT_DOCS = "https://platform.claude.com/docs/en/release-notes/system-prompts";
@@ -381,6 +423,22 @@ const server = http.createServer(async (req, res) => {
       const { text } = await readJson(req);
       if (typeof text !== "string" || !text.trim()) return sendJson(res, 400, { error: "Empty promt" });
       return sendJson(res, 200, { title: await makeDumbTitle(text) });
+    }
+    if (req.method === "GET" && pathname === "/api/chats") return sendJson(res, 200, await listChats());
+    const chat = pathname.match(/^\/api\/chats\/([\w-]+)$/);
+    if (chat && validChatId(chat[1])) {
+      if (req.method === "PUT") {
+        const body = await readJson(req);
+        if (!body || typeof body !== "object" || !Array.isArray(body.messages)) {
+          return sendJson(res, 400, { error: "Thats not a chat" });
+        }
+        await saveChat(chat[1], body);
+        return sendJson(res, 200, { ok: true });
+      }
+      if (req.method === "DELETE") {
+        await deleteChat(chat[1]);
+        return sendJson(res, 200, { ok: true });
+      }
     }
     const del = pathname.match(/^\/api\/conversations\/([\w-]+)$/);
     if (req.method === "DELETE" && del) {
