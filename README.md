@@ -8,49 +8,47 @@ Equipped with the latest Clod models: Sonet, Opsu, and Hiaku
 
 <img width="403" height="344" alt="image" src="https://github.com/user-attachments/assets/d1b6436a-4b7b-4202-aad1-065ade10a884" />
 
+its a chat thing in the browzer. u type words, Clod types words back. it uses evry Claude modle ur GitHub Copilot has, thru the [GitHub Copilot SDK](https://www.npmjs.com/package/@github/copilot-sdk) (big computer word, dont worry abt it). the logo was made in MS Paint by a profesional (me).
 
-A browzer chat app for evry Claude modle available to your GitHub Copilot account, built on the
-[GitHub Copilot SDK](https://www.npmjs.com/package/@github/copilot-sdk). It comes with a proudly
-bootleg MS-Paint logo.
+> Clod is not Anthropic. Clod is not GitHub. Clod is just Clod. pls dont sue Clod.
 
-> Clod is an unofficial hobby project. It has no affiliation with Anthropic or GitHub.
+## Stuf it does
 
-## Feautres
+- has modles. they are called Sonet, Opsu and Hiaku. new ones show up by them selfs, its like magic
+- words come out one at a time so it looks like its typing. very advanced
+- shows the thinky part in a box u can open. sometimes it doesnt think. same tbh
+- u can change the modle in the middle and it still remembers stuff (most of the time)
+- thinkin is set to "high" bc we want it SMART
+- uses the reel Claude app system prompt, Clod downloads it from Anthropic evry day and also tells it the date so it knows what day it is
+- remembers ur chats in the browzer. dont clear ur cookies or it forgets everything
+- big Stahp button if Clod is talking to much
+- copy buttons on the code. also dark mode for vampires
+- u can paste screenshots with Ctrl+V. or drag them. or the paperclip 📎. Opsu 5.5 can only look at 1 pic at a time bc its old and its eyes are tired
+- gives ur chats realy dumb names like "bike chayn"
 
-- Lists Claude modles dynamicaly (renamed to "Clod …" in the UI) from `client.listModels()`, so new models appear automatically
-- Streams responses and the model's thinking (shown in a collapsible "Thought process" block)
-- Lets you switch models and thinking effort mid-conversation (`session.setModel`) without losing history. Thinkin defaults to "high"
-- Uses the real Claude app system prompt for each modle, fetched at runtime from Anthropic's [publishd system prompts](https://platform.claude.com/docs/en/release-notes/system-prompts) with todays date filled in
-- Keeps conversation history in `localStorage` and resumes server sessions after a restart
-- Includes a Stahp button (`session.abort()`), Markdown rendering, code copy buttons and dark mode
-- Takes pics: paste a screenshot with Ctrl+V anywere, drag-drop, or use the 📎 buton (per-model limits, e.g. Opsu 5.5 takes 1)
-- Gives chats realy dumb short titles
+## U need
 
-## Requirments
+- Node.js 22.12 or newer (older ones are bad, they dont work)
+- GitHub Copilot. u have to be logged in to the Copilot CLI first. Clod cant log in for u, Clod has no hands
 
-- Node.js 22.12 or later
-- A GitHub account with Copilot access. The SDK uses your logged-in Copilot CLI credentials.
-
-## Run
+## How to turn it on
 
 ```bash
 npm install
 npm start
-# open http://127.0.0.1:3000
+# then go to http://127.0.0.1:3000 in ur browzer
 ```
 
-Environment variables:
+knobs u can turn:
 
-| Variable | Default     | Description       |
-| -------- | ----------- | ----------------- |
-| `PORT`   | `3000`      | HTTP port         |
-| `HOST`   | `127.0.0.1` | Interface to bind |
+| Knob   | Normal      | Wat it does           |
+| ------ | ----------- | --------------------- |
+| `PORT` | `3000`      | the numbr at the end  |
+| `HOST` | `127.0.0.1` | where it lives        |
 
-The server has no authentication and uses your Copilot credentials, so keep it bound to localhost.
+⚠ Clod has no pasword and uses YOUR Copilot account. keep it on ur own computer (`127.0.0.1`) or strangers will talk to Clod on ur bill
 
-## How it wokrs
+## How it wokrs (we think)
 
-- `server.mjs` is a plain Node HTTP server. It keeps one Copilot SDK session per conversation, with
-  all agent tools disabled (`availableTools: []`) and a replaced system prompt, so it behaves as a
-  normal chat assistant. Replies are streamed to the browser over Server-Sent Events.
-- `public/` contains the vanilla HTML/CSS/JS frontend. It has no build step and no CDN dependencies.
+- `server.mjs` is the brain. evry chat gets its own Copilot sesion. we took away all the tools so it cant touch ur files, it can only talk. the words get beamed to the browzer with Server-Sent Events (wires)
+- `public/` is the face. just HTML, CSS and JS. no build step. no framworks. no idea what those are anyway
