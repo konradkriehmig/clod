@@ -442,7 +442,7 @@
   });
 
   // ---------- Sending ----------
-  async function send(text, images = []) {
+  async function send(text, images = [], opts = {}) {
     const model = els.model.value;
     if (!models.some((m) => m.id === model)) return;
     const effort = els.effort.value;
@@ -496,6 +496,7 @@
           model,
           effort,
           prompt: text,
+          voice: Boolean(opts.voice),
           images: images.map(({ name, mimeType, data }) => ({ name, mimeType, data })),
         }),
         signal: controller.signal,
@@ -527,6 +528,7 @@
             if (!reply.text && data.text) reply.text = data.text;
           } else if (event === "error") throw new Error(data.error);
           else if (event === "done") done = true;
+          opts.onUpdate?.(reply);
           rerender();
         }
       }
@@ -546,6 +548,7 @@
       }
       renderList();
       retitle(convo);
+      opts.onDone?.(reply);
     }
   }
 
@@ -582,6 +585,221 @@
     if (!inflight) els.send.disabled = !els.prompt.value.trim() && !pending.length;
   }
   els.prompt.addEventListener("input", autosize);
+
+  // ---------- Voice mode ----------
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const voiceEls = {
+    btn: $("#voice"), overlay: $("#voice-mode"), orb: $("#voice-orb"), status: $("#voice-status"),
+    caption: $("#voice-caption"), mute: $("#voice-mute"), end: $("#voice-end"),
+  };
+  const voice = { on: false, muted: false, rec: null, gen: 0, queue: 0, spokenUpTo: 0, replyDone: false, ttsVoice: null };
+
+  if (!SpeechRec || !window.speechSynthesis) {
+    voiceEls.btn.title = "Ur browzer cant do voice. try Edge or Chrome";
+    voiceEls.btn.disabled = true;
+    voiceEls.btn.style.opacity = ".35";
+  }
+
+  function pickTtsVoice() {
+    const all = speechSynthesis.getVoices();
+    const lang = (navigator.language || "en-US").slice(0, 2);
+    const mine = all.filter((v) => v.lang.startsWith(lang));
+    voice.ttsVoice =
+      mine.find((v) => /natural/i.test(v.name) && /aria|jenny|ava|emma|sonia/i.test(v.name)) ||
+      mine.find((v) => /natural|online|google/i.test(v.name)) ||
+      mine.find((v) => v.default) || mine[0] || all[0] || null;
+  }
+  if (window.speechSynthesis) {
+    pickTtsVoice();
+    speechSynthesis.addEventListener?.("voiceschanged", pickTtsVoice);
+  }
+
+  function setVoiceState(state, text) {
+    voiceEls.overlay.className = state + (voice.muted ? " muted" : "");
+    voiceEls.status.textContent = voice.muted && state === "listening" ? "Mic is muted" : text;
+  }
+
+  // Turn markdown into something that sounds OK when read aloud.
+  function speakable(md) {
+    return md
+      .replace(/```[\s\S]*?(```|$)/g, " (theres some code on the screen) ")
+      .replace(/`([^`]*)`/g, "$1")
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+      .replace(/https?:\/\/\S+/g, "a link")
+      .replace(/^\s*[-*+]\s+/gm, "")
+      .replace(/^\s*#+\s*/gm, "")
+      .replace(/[*_~#>|]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function speak(text) {
+    const clean = speakable(text);
+    if (!clean) return;
+    const u = new SpeechSynthesisUtterance(clean);
+    if (voice.ttsVoice) u.voice = voice.ttsVoice;
+    u.rate = 1.05;
+    const gen = voice.gen;
+    voice.queue++;
+    u.onend = u.onerror = () => {
+      if (gen !== voice.gen) return;
+      voice.queue--;
+      afterSpeech();
+    };
+    speechSynthesis.speak(u);
+  }
+
+  // Speak complete sentences as they stream in, so it starts talking early.
+  function speakNewSentences(reply, final) {
+    if (!voice.on) return;
+    const text = reply.text;
+    const rest = text.slice(voice.spokenUpTo);
+    let cut = -1;
+    if (final) cut = rest.length;
+    else {
+      // Don't cut inside an open code block.
+      if ((text.slice(0, voice.spokenUpTo).match(/```/g) || []).length % 2) return;
+      const re = /[.!?](?=\s)|\n\n/g;
+      let m;
+      while ((m = re.exec(rest))) cut = m.index + m[0].length;
+      if ((rest.slice(0, cut).match(/```/g) || []).length % 2) cut = rest.slice(0, cut).lastIndexOf("```");
+    }
+    if (cut <= 0) return;
+    const chunk = rest.slice(0, cut);
+    voice.spokenUpTo += cut;
+    if (chunk.trim()) {
+      setVoiceState("speaking", "Tlaking…");
+      speak(chunk);
+    }
+  }
+
+  function afterSpeech() {
+    if (!voice.on || voice.queue > 0 || !voice.replyDone) return;
+    listen();
+  }
+
+  function listen() {
+    if (!voice.on) return;
+    if (voice.muted) return setVoiceState("listening", "Mic is muted");
+    stopRec();
+    const rec = new SpeechRec();
+    voice.rec = rec;
+    rec.lang = navigator.language || "en-US";
+    rec.interimResults = true;
+    rec.continuous = false;
+    let finalText = "";
+    let failed = false;
+    rec.onresult = (e) => {
+      let interim = "";
+      finalText = "";
+      for (const r of e.results) (r.isFinal ? (finalText += r[0].transcript) : (interim += r[0].transcript));
+      voiceEls.caption.textContent = (finalText + interim).trim();
+    };
+    rec.onerror = (e) => {
+      failed = true;
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        toast("Clod cant hear u. alow the microfone pls");
+        stopVoice();
+      } else if (e.error === "network") {
+        toast("speach thing needs internet");
+        stopVoice();
+      }
+    };
+    rec.onend = () => {
+      if (voice.rec !== rec || !voice.on) return;
+      voice.rec = null;
+      const said = finalText.trim();
+      if (said) voiceTurn(said);
+      else if (!failed || !voice.on) setTimeout(listen, 150); // silence: keep listening
+      else setTimeout(listen, 600);
+    };
+    setVoiceState("listening", "Lisening…");
+    voiceEls.caption.textContent = "";
+    try {
+      rec.start();
+    } catch {
+      setTimeout(listen, 400);
+    }
+  }
+
+  function stopRec() {
+    const rec = voice.rec;
+    voice.rec = null;
+    try { rec?.abort(); } catch {}
+  }
+
+  function voiceTurn(text) {
+    if (!els.model.value) return;
+    voice.spokenUpTo = 0;
+    voice.replyDone = false;
+    setVoiceState("thinking", "Thinkin…");
+    voiceEls.caption.textContent = text;
+    send(text, [], {
+      voice: true,
+      onUpdate: (reply) => speakNewSentences(reply, false),
+      onDone: (reply) => {
+        if (!voice.on) return;
+        voice.replyDone = true;
+        if (reply.error) speak(`uh oh. ${reply.error}`);
+        else if (!reply.stopped) speakNewSentences(reply, true);
+        afterSpeech();
+      },
+    });
+  }
+
+  function interrupt() {
+    if (!voice.on) return;
+    voice.gen++;
+    speechSynthesis.cancel();
+    voice.queue = 0;
+    if (inflight) inflight.abort(); // onDone will kick off listening
+    else {
+      voice.replyDone = true;
+      listen();
+    }
+  }
+
+  function startVoice() {
+    if (voiceEls.btn.disabled) return;
+    if (!models.some((m) => m.id === els.model.value)) return toast("no modle yet, hold on");
+    if (inflight) inflight.abort();
+    voice.on = true;
+    voice.gen++;
+    voice.queue = 0;
+    voice.replyDone = true;
+    voiceEls.overlay.hidden = false;
+    speechSynthesis.cancel();
+    // A tiny silent utterance unlocks speech synthesis from this click.
+    speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance(" "), { volume: 0 }));
+    listen();
+  }
+
+  function stopVoice() {
+    voice.on = false;
+    stopRec();
+    voice.gen++;
+    speechSynthesis.cancel();
+    voice.queue = 0;
+    if (inflight) inflight.abort();
+    voiceEls.overlay.hidden = true;
+    els.prompt.focus();
+  }
+
+  voiceEls.btn.addEventListener("click", startVoice);
+  voiceEls.end.addEventListener("click", stopVoice);
+  voiceEls.orb.addEventListener("click", interrupt);
+  voiceEls.mute.addEventListener("click", () => {
+    voice.muted = !voice.muted;
+    voiceEls.mute.textContent = voice.muted ? "🔇" : "🎙";
+    if (voice.muted) {
+      stopRec();
+      if (voiceEls.overlay.classList.contains("listening")) setVoiceState("listening", "Mic is muted");
+    } else if (voice.replyDone && voice.queue === 0) listen();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (voice.on && e.key === "Escape") stopVoice();
+  });
 
   // ---------- Chrome ----------
   $("#new-chat").addEventListener("click", newChat);

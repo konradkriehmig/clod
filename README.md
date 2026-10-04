@@ -33,6 +33,7 @@ its a chat thing in the browzer. u type words, Clod types words back. it uses ev
 - copy buttons on the code. also dark mode for vampires
 - u can paste screenshots with Ctrl+V. or drag them. or the paperclip 📎. Opsu 5.5 can only look at 1 pic at a time bc its old and its eyes are tired
 - gives ur chats realy dumb names like "bike chayn"
+- VOICE MODE 🎙. press the mic and just tlak to Clod. it tlaks back (with ur browzers robot voice, works best in Edge). tap the orange blob to make it shut up. Anthropic doesnt put the voice system prompt online so Clod made up its own little one
 
 ## U need
 

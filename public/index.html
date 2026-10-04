@@ -39,11 +39,26 @@
           <select id="model" title="Model"></select>
           <select id="effort" title="Thinkin efort"></select>
         </div>
-        <button id="send" type="submit" class="send" title="Sned" aria-label="Sned">↑</button>
+        <div class="composer-right">
+          <button id="voice" type="button" class="voice-btn" title="Tlak to Clod (voice mode)" aria-label="Voice mode">🎙</button>
+          <button id="send" type="submit" class="send" title="Sned" aria-label="Sned">↑</button>
+        </div>
       </div>
     </form>
     <div class="disclaimer">Clod makes mistakes</div>
   </main>
+
+  <div id="voice-mode" hidden>
+    <button id="voice-orb" type="button" title="Tap to interupt / tlak" aria-label="Interupt">
+      <img src="/logo.svg" alt="" />
+    </button>
+    <div id="voice-status">Lisening…</div>
+    <div id="voice-caption"></div>
+    <div class="voice-controls">
+      <button id="voice-mute" type="button" title="Mute mic">🎙</button>
+      <button id="voice-end" type="button" title="Hang up">✕</button>
+    </div>
+  </div>
 
   <script src="/markdown.js"></script>
   <script src="/app.js"></script>

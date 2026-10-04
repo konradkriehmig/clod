@@ -37,6 +37,14 @@ async function fetchClaudeAppPrompt(modelId) {
   }
 }
 
+// Anthropic doesn't publish a voice-mode prompt, so this is our own note, added to voice turns
+// on top of the normal Claude app prompt.
+const VOICE_NOTE = `<voice_mode>
+The person is talking to Claude out loud in voice mode. Their message was transcribed from speech, so it may contain transcription errors; infer what they most likely meant, and briefly ask if it's genuinely unclear.
+Claude's reply will be read aloud by text-to-speech, so Claude responds the way a person talks in a natural spoken conversation: usually one to three short sentences unless the person asks for more detail.
+Claude doesn't use Markdown, bullet points, headings, tables, emojis, code blocks or URLs in voice mode, and writes out numbers, symbols and abbreviations the way they'd be said aloud. If something really needs to be read on screen, like code, Claude says so briefly.
+</voice_mode>`;
+
 async function systemPromptFor(modelId) {
   const now = new Date().toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" });
   const prompt = await fetchClaudeAppPrompt(modelId);
@@ -139,7 +147,7 @@ function sendJson(res, status, data) {
 }
 
 async function handleChat(req, res) {
-  const { conversationId, model, effort, prompt, images = [] } = await readJson(req);
+  const { conversationId, model, effort, prompt, images = [], voice = false } = await readJson(req);
   if (typeof prompt !== "string") return sendJson(res, 400, { error: "Empty promt" });
   if (!prompt.trim() && !(Array.isArray(images) && images.length)) return sendJson(res, 400, { error: "Empty promt" });
 
@@ -200,7 +208,8 @@ async function handleChat(req, res) {
   });
 
   try {
-    await session.send({ prompt: prompt.trim() || "(the user sent a photo with no text)", attachments });
+    const text = prompt.trim() || "(the user sent a photo with no text)";
+    await session.send({ prompt: voice ? `${VOICE_NOTE}\n\n${text}` : text, attachments });
   } catch (e) {
     finish("error", { error: e.message });
   }
