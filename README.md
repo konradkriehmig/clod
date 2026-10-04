@@ -1,6 +1,6 @@
 A cheap alternative to Claude
 
-<img width="1728" height="1445" alt="image" src="https://github.com/user-attachments/assets/72d09e64-59bd-429d-9835-40ae4798424a" />
+<img width="1741" height="870" alt="image" src="https://github.com/user-attachments/assets/62a7bc4d-89db-4dd8-9ef1-298c9974bcfd" />
 
 Equipped with the latest Clod models: Sonet, Opsu, and Hiaku
 
