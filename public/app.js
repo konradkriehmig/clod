@@ -15,6 +15,7 @@
   const PREFS_KEY = "clod.prefs.v1";
   let conversations = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
   let prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
+  if (!prefs.sonet55) { delete prefs.model; prefs.sonet55 = true; localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); }
   let models = [];
   let current = null;
   let inflight = null;
@@ -58,7 +59,7 @@
     }
     els.model.innerHTML = models.map((m) => `<option value="${m.id}">${m.name}</option>`).join("");
     const preferred = current?.model || prefs.model;
-    const fallback = models.find((m) => /sonnet/i.test(m.id))?.id || models[0].id;
+    const fallback = (models.find((m) => m.id === "claude-sonnet-5.5") || models.find((m) => /sonnet/i.test(m.id)) || models[0]).id;
     els.model.value = models.some((m) => m.id === preferred) ? preferred : fallback;
     renderEffort();
   }
