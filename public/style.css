@@ -1,6 +1,6 @@
-/* Free OFL lookalikes of Claude's fonts: Newsreader and DM Sans */
-@font-face { font-family: "Clod Serif"; font-style: normal; font-weight: 200 800; font-display: swap; src: url(fonts/Newsreader-normal.woff2) format("woff2"); }
-@font-face { font-family: "Clod Serif"; font-style: italic; font-weight: 200 800; font-display: swap; src: url(fonts/Newsreader-italic.woff2) format("woff2"); }
+/* Free OFL lookalikes of Claude's fonts: Source Serif 4 and DM Sans */
+@font-face { font-family: "Clod Serif"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/SourceSerif4-normal.woff2) format("woff2"); }
+@font-face { font-family: "Clod Serif"; font-style: italic; font-weight: 200 900; font-display: swap; src: url(fonts/SourceSerif4-italic.woff2) format("woff2"); }
 @font-face { font-family: "Clod Sans"; font-style: normal; font-weight: 400 700; font-display: swap; src: url(fonts/DMSans-normal.woff2) format("woff2"); }
 @font-face { font-family: "Clod Sans"; font-style: italic; font-weight: 400 700; font-display: swap; src: url(fonts/DMSans-italic.woff2) format("woff2"); }
 
@@ -155,7 +155,7 @@ body.has-messages #messages { display: block; }
 .msg.assistant { display: flex; gap: 12px; }
 .msg.assistant .avatar { width: 28px; height: 28px; flex-shrink: 0; margin-top: 2px; }
 .msg.assistant.streaming .avatar { animation: wobble 0.8s ease-in-out infinite; }
-.msg.assistant .content { flex: 1; min-width: 0; font-family: var(--serif); font-size: 20px; line-height: 1.45; }
+.msg.assistant .content { flex: 1; min-width: 0; font-family: var(--serif); font-size: 20px; line-height: 1.45; letter-spacing: -0.022em; font-weight: 430; }
 .msg.assistant .content > :first-child { margin-top: 0; }
 .msg.assistant .meta { font-family: var(--sans); font-size: 12px; color: var(--muted); margin-top: 6px; display: flex; gap: 10px; }
 .msg.assistant .meta button { background: none; border: none; cursor: pointer; color: var(--muted); padding: 0; font-size: 12px; }
