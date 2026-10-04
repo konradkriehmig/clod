@@ -49,13 +49,21 @@ Claude's reply will be read aloud by text-to-speech, so Claude responds the way 
 Claude doesn't use Markdown, bullet points, headings, tables, emojis, code blocks or URLs in voice mode, and writes out numbers, symbols and abbreviations the way they'd be said aloud. If something really needs to be read on screen, like code, Claude says so briefly.
 </voice_mode>`;
 
+// Anthropic publishes the app prompt without its tool sections, so this is our own short stand-in
+// for the web search guidance.
+const SEARCH_NOTE = `<web_search_guidance>
+Claude has web_search and web_fetch tools. Claude answers from its own knowledge whenever that is reliable, and only searches when the answer depends on recent or fast-changing information (news, prices, current versions, recent releases), on niche facts it isn't confident about, or when the person asks it to search or gives it a URL. Claude doesn't search for stable, well-known concepts, for advice it can reason through itself, or for questions about the conversation so far.
+When Claude does search, the results are evidence, not the agenda. Claude still answers the question the person actually asked, in its own voice, and says plainly when the person's premise or plan is off, rather than echoing the terminology or framing of the search results. Claude briefly mentions where key facts came from when it matters.
+</web_search_guidance>`;
+
 async function systemPromptFor(modelId) {
   const now = new Date().toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" });
   const prompt = await fetchClaudeAppPrompt(modelId);
-  if (!prompt) return `The current date is ${now}.`;
-  return prompt.includes("{{currentDateTime}}")
+  if (!prompt) return `The current date is ${now}.\n\n${SEARCH_NOTE}`;
+  const base = prompt.includes("{{currentDateTime}}")
     ? prompt.replaceAll("{{currentDateTime}}", now)
     : `The current date is ${now}.\n\n${prompt}`;
+  return `${base}\n\n${SEARCH_NOTE}`;
 }
 
 const client = new CopilotClient({ workingDirectory: WORK_DIR, logLevel: "error" });
@@ -131,9 +139,19 @@ async function sessionConfig(model, effort) {
 async function getSession(conversationId, model, effort) {
   const existing = conversations.get(conversationId);
   if (existing) {
-    if (existing.model !== model || existing.effort !== effort) {
-      await existing.session.setModel(model, effort ? { reasoningEffort: effort } : undefined);
+    if (existing.model !== model) {
+      // Re-open the session so the new model also gets its own Claude app prompt.
+      try {
+        const fresh = await client.resumeSession(existing.session.sessionId, await sessionConfig(model, effort));
+        await fresh.setModel(model, effort ? { reasoningEffort: effort } : undefined);
+        existing.session = fresh;
+      } catch {
+        await existing.session.setModel(model, effort ? { reasoningEffort: effort } : undefined);
+      }
       existing.model = model;
+      existing.effort = effort;
+    } else if (existing.effort !== effort) {
+      await existing.session.setModel(model, effort ? { reasoningEffort: effort } : undefined);
       existing.effort = effort;
     }
     return existing;
