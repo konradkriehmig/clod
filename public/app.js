@@ -294,10 +294,29 @@
     setTimeout(() => (btn.textContent = "Coppy"), 1200);
   });
 
+  // Follow new text only while the user hasn't scrolled away from the bottom.
+  let stickToBottom = true;
+  let lastScrollTop = 0;
+  const atBottom = () => {
+    const m = els.messages;
+    return m.scrollHeight - m.scrollTop - m.clientHeight < 8;
+  };
+  els.messages.addEventListener("wheel", (e) => { if (e.deltaY < 0) stickToBottom = false; }, { passive: true });
+  els.messages.addEventListener("touchmove", () => { stickToBottom = atBottom(); }, { passive: true });
+  els.messages.addEventListener("scroll", () => {
+    const top = els.messages.scrollTop;
+    if (top < lastScrollTop - 2) stickToBottom = false;
+    if (atBottom()) stickToBottom = true;
+    lastScrollTop = top;
+  }, { passive: true });
+
   function scrollToBottom(force) {
     const m = els.messages;
-    const nearBottom = m.scrollHeight - m.scrollTop - m.clientHeight < 140;
-    if (force || nearBottom) m.scrollTop = m.scrollHeight;
+    if (force) stickToBottom = true;
+    if (stickToBottom) {
+      m.scrollTop = m.scrollHeight;
+      lastScrollTop = m.scrollTop;
+    }
   }
 
   // ---------- Dumb titles ----------
