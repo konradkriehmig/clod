@@ -31,6 +31,7 @@
   const savePrefs = () => localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
   const modelName = (id) => models.find((m) => m.id === id)?.name || id;
+  const effortName = (e) => (e === "medium" ? "mid" : e);
 
   function setGreeting() {
     const h = new Date().getHours();
@@ -66,7 +67,7 @@
     const m = models.find((x) => x.id === els.model.value);
     const efforts = m?.reasoningEfforts || [];
     els.effort.style.display = efforts.length ? "" : "none";
-    els.effort.innerHTML = efforts.map((e) => `<option value="${e}">Thinkin: ${e}</option>`).join("");
+    els.effort.innerHTML = efforts.map((e) => `<option value="${e}">Thinkin: ${effortName(e)}</option>`).join("");
     const preferred = current?.effort || prefs.effort || "high";
     els.effort.value = efforts.includes(preferred) ? preferred : efforts.includes("high") ? "high" : efforts[0] || "";
     updateAttachState();
@@ -269,7 +270,7 @@
     meta.innerHTML = "";
     if (!streaming && msg.model) {
       const label = document.createElement("span");
-      label.textContent = modelName(msg.model) + (msg.effort ? ` · ${msg.effort}` : "") + (msg.stopped ? " · stoped" : "");
+      label.textContent = modelName(msg.model) + (msg.effort ? ` · ${effortName(msg.effort)}` : "") + (msg.stopped ? " · stoped" : "");
       meta.append(label);
       if (msg.text) {
         const copy = document.createElement("button");
