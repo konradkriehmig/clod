@@ -251,9 +251,9 @@
     "Brainin", "Noodlin", "Pondorin", "Smooshin thoughts", "Cogitatin",
     "Wigglin neurons", "Concoctin", "Percolatering", "Doin a big think", "Schemin", "Bamboozlin",
     "Clodulating", "Spelunkin", "Head scratchin", "Thunkin",
-    "Shufflin brain cells", "Puzzlin", "Contemplatin belly button", "Wranglin wurds", "Yeehawin",
+    "Puzzlin", "Contemplatin belly button", "Wranglin wurds", "Yeehawin",
     "Doodlin", "Jigglin the wires", "Hmmmin", "Askin my mom",
-    "Blowin on the cartridge", "Stirrin the soup", "Lickin the battery", "Countin on fingers",
+    "Blowin on the cartridge", "Stirrin the soup", "Countin on fingers",
     "Loadin smartnes", "Turnin it of and on agen",
   ];
   const randomFiller = () => FILLER_WORDS[Math.floor(Math.random() * FILLER_WORDS.length)] + "…";
