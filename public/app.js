@@ -250,7 +250,7 @@
   const FILLER_WORDS = [
     "Brainin", "Noodlin", "Pondorin", "Smooshin thoughts",
     "Wigglin neurons", "Concoctin", "Percolatering", "Doin a big think", "Schemin", "Bamboozlin",
-    "Clodulating", "Spelunkin", "Head scratchin", "Thunkin",
+    "Clodulating", "Head scratchin", "Thunkin",
     "Puzzlin", "Wranglin wurds", "Yeehawin",
     "Doodlin", "Jigglin the wires", "Hmmmin", "Askin my mom",
     "Blowin on the cartridge", "Stirrin the soup", "Countin on fingers",
