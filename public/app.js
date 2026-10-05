@@ -248,7 +248,7 @@
 
   // Clod's version of the whimsical "Pondering…" status words, only dumber.
   const FILLER_WORDS = [
-    "Head scratchin", "Doodlin", "Hmmm", "Uhhhhh", "Askin my mom",
+    "Head scratchin", "Hmmm", "Uhhhhh", "Askin my mom",
     "Blowin on the cartridge", "Countin on fingers", "Turnin it of and on agen",
   ];
   const randomFiller = () => FILLER_WORDS[Math.floor(Math.random() * FILLER_WORDS.length)] + "…";
