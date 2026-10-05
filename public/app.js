@@ -251,7 +251,7 @@
     "Brainin", "Noodlin", "Pondorin", "Smooshin thoughts",
     "Wigglin neurons", "Concoctin", "Percolatering", "Doin a big think", "Schemin", "Bamboozlin",
     "Clodulating", "Spelunkin", "Head scratchin", "Thunkin",
-    "Puzzlin", "Contemplatin belly button", "Wranglin wurds", "Yeehawin",
+    "Puzzlin", "Wranglin wurds", "Yeehawin",
     "Doodlin", "Jigglin the wires", "Hmmmin", "Askin my mom",
     "Blowin on the cartridge", "Stirrin the soup", "Countin on fingers",
     "Loadin smartnes", "Turnin it of and on agen",
