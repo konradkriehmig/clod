@@ -248,7 +248,7 @@
 
   // Clod's version of the whimsical "Pondering…" status words, only dumber.
   const FILLER_WORDS = [
-    "Brainin", "Noodlin", "Pondorin", "Smooshin thoughts",
+    "Noodlin", "Pondorin", "Smooshin thoughts",
     "Wigglin neurons", "Concoctin", "Percolatering", "Doin a big think", "Schemin", "Bamboozlin",
     "Clodulating", "Head scratchin", "Thunkin",
     "Puzzlin", "Wranglin wurds", "Yeehawin",
