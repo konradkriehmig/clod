@@ -249,11 +249,12 @@
   // Clod's version of the whimsical "Pondering…" status words, only dumber.
   const FILLER_WORDS = [
     "Thinkerating", "Brainin", "Noodlin", "Pondorin", "Smooshin thoughts", "Cogitatin",
-    "Wigglin neurons",     "Concoctin",    "Percolatering", "Doin a big think", "Schemin", "Bamboozlin", "Clodulating",
-    "Mullin it ovr", "Spelunkin",     "Head scratchin",    "Thunkin", "Bloopin", "Shufflin brain cells", "Puzzlin", "Contemplatin belly button",
-    "Wranglin wurds", "Yeehawin", "Doodlin", "Boppin", "Jigglin the wires", "Hmmmin",
-    "Untanglin spaghetti", "Askin my mom", "Blowin on the cartridge", "Stirrin the soup",
-    "Lickin the battery", "Countin on fingers", "Loadin smartnes", "Turnin it of and on agen",
+    "Wigglin neurons", "Concoctin", "Percolatering", "Doin a big think", "Schemin", "Bamboozlin",
+    "Clodulating", "Mullin it ovr", "Spelunkin", "Head scratchin", "Thunkin", "Bloopin",
+    "Shufflin brain cells", "Puzzlin", "Contemplatin belly button", "Wranglin wurds", "Yeehawin",
+    "Doodlin", "Boppin", "Jigglin the wires", "Hmmmin", "Untanglin spaghetti", "Askin my mom",
+    "Blowin on the cartridge", "Stirrin the soup", "Lickin the battery", "Countin on fingers",
+    "Loadin smartnes", "Turnin it of and on agen",
   ];
   const randomFiller = () => FILLER_WORDS[Math.floor(Math.random() * FILLER_WORDS.length)] + "…";
   setInterval(() => {
