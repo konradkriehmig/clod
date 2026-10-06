@@ -72,5 +72,5 @@ u need [cloudflared](https://developers.cloudflare.com/cloudflare-one/connection
 
 ## How it wokrs (we think)
 
-- `server.mjs` is the brain. evry chat gets its own Copilot sesion. we took away all the tools except googlin (`web_search`) and readin web pages (`web_fetch`), so it cant touch ur files. web_fetch is only alowed to visit the reel internet, not ur computer or ur wifi stuff. the words get beamed to the browzer with Server-Sent Events (wires)
+- `server.mjs` is the brain. evry chat gets its own Copilot sesion. we took away all the tools except readin web pages (`web_fetch`) and gave it our own googlin tool (`search_web`, it asks DuckDuckGo or Bing bc GitHubs one kept timin out), so it cant touch ur files. web_fetch is only alowed to visit the reel internet, not ur computer or ur wifi stuff. the words get beamed to the browzer with Server-Sent Events (wires)
 - `public/` is the face. just HTML, CSS and JS. no build step. no framworks. no idea what those are anyway

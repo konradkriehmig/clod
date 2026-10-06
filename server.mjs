@@ -5,7 +5,7 @@ import { timingSafeEqual } from "node:crypto";
 import { BlockList } from "node:net";
 import { lookup as dnsLookup } from "node:dns/promises";
 import { fileURLToPath } from "node:url";
-import { CopilotClient } from "@github/copilot-sdk";
+import { CopilotClient, defineTool } from "@github/copilot-sdk";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "public");
@@ -94,7 +94,7 @@ Claude doesn't use Markdown, bullet points, headings, tables, emojis, code block
 // Anthropic publishes the app prompt without its tool sections, so this is our own short stand-in
 // for the web search guidance.
 const SEARCH_NOTE = `<web_search_guidance>
-Claude has web_search and web_fetch tools. Claude answers from its own knowledge whenever that is reliable, and only searches when the answer depends on recent or fast-changing information (news, prices, current versions, recent releases), on niche facts it isn't confident about, or when the person asks it to search or gives it a URL. Claude doesn't search for stable, well-known concepts, for advice it can reason through itself, or for questions about the conversation so far.
+Claude has search_web and web_fetch tools. Claude answers from its own knowledge whenever that is reliable, and only searches when the answer depends on recent or fast-changing information (news, prices, current versions, recent releases), on niche facts it isn't confident about, or when the person asks it to search or gives it a URL. Claude doesn't search for stable, well-known concepts, for advice it can reason through itself, or for questions about the conversation so far.
 When Claude does search, the results are evidence, not the agenda. Claude still answers the question the person actually asked, in its own voice, and says plainly when the person's premise or plan is off, rather than echoing the terminology or framing of the search results. Claude briefly mentions where key facts came from when it matters.
 </web_search_guidance>`;
 
@@ -165,12 +165,102 @@ async function onPermissionRequest(req) {
   return { kind: "reject" };
 }
 
+// Copilot's built-in web_search goes through GitHub's hosted MCP server, which keeps timing out (HTTP 504),
+// and the SDK won't let us override it, so Clod adds its own search_web tool instead.
+// It searches DuckDuckGo's HTML page, with Bing as a backup. No API keys needed.
+const SEARCH_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
+const htmlText = (s) =>
+  s
+    .replace(/<[^>]+>/g, "")
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+
+async function searchDuckDuckGo(query) {
+  const res = await fetch("https://html.duckduckgo.com/html/", {
+    method: "POST",
+    body: new URLSearchParams({ q: query }),
+    headers: { "User-Agent": SEARCH_UA, "Content-Type": "application/x-www-form-urlencoded" },
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (!res.ok) throw new Error(`DuckDuckGo HTTP ${res.status}`);
+  const html = await res.text();
+  const results = [];
+  for (const block of html.split(/class="[^"]*\bresult__body\b[^"]*"/).slice(1)) {
+    const a = block.match(/class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+    if (!a) continue;
+    let url = a[1].replace(/&amp;/g, "&");
+    const redirect = url.match(/[?&]uddg=([^&]+)/);
+    if (redirect) url = decodeURIComponent(redirect[1]);
+    if (/duckduckgo\.com\/y\.js/.test(url)) continue; // ads
+    const snippet = block.match(/class="result__snippet"[^>]*>([\s\S]*?)<\/a>/);
+    results.push({ title: htmlText(a[2]), url, snippet: snippet ? htmlText(snippet[1]) : "" });
+  }
+  return results;
+}
+
+async function searchBing(query) {
+  const res = await fetch(`https://www.bing.com/search?setlang=en&q=${encodeURIComponent(query)}`, {
+    headers: { "User-Agent": SEARCH_UA, "Accept-Language": "en-US,en" },
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (!res.ok) throw new Error(`Bing HTTP ${res.status}`);
+  const html = await res.text();
+  const results = [];
+  for (const block of html.split('<li class="b_algo').slice(1)) {
+    const a = block.match(/<h2[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+    if (!a) continue;
+    let url = a[1].replace(/&amp;/g, "&");
+    const redirect = url.match(/[?&]u=a1([^&]+)/);
+    if (redirect) url = Buffer.from(redirect[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+    const snippet = block.match(/<p[^>]*>([\s\S]*?)<\/p>/);
+    results.push({ title: htmlText(a[2]), url, snippet: snippet ? htmlText(snippet[1]) : "" });
+  }
+  return results;
+}
+
+const webSearchTool = defineTool("search_web", {
+  description:
+    "Search the web. Returns the top results (title, URL and snippet). Use web_fetch on a result URL to read the full page.",
+  parameters: {
+    type: "object",
+    properties: { query: { type: "string", description: "The search query" } },
+    required: ["query"],
+  },
+  skipPermission: true,
+  defer: "never",
+  handler: async ({ query }) => {
+    if (typeof query !== "string" || !query.trim()) return { textResultForLlm: "Empty query.", resultType: "failure" };
+    const errors = [];
+    for (const engine of [searchDuckDuckGo, searchBing]) {
+      try {
+        const results = (await engine(query.trim())).slice(0, 10);
+        if (!results.length) throw new Error(`${engine.name}: no results`);
+        return results
+          .map((r, i) => `${i + 1}. ${r.title}\n   ${r.url}${r.snippet ? `\n   ${r.snippet}` : ""}`)
+          .join("\n\n");
+      } catch (e) {
+        errors.push(e.message);
+      }
+    }
+    return { textResultForLlm: `Web search failed: ${errors.join("; ")}`, resultType: "failure" };
+  },
+});
+
 async function sessionConfig(model, effort) {
   return {
     model,
     ...(effort ? { reasoningEffort: effort } : {}),
     streaming: true,
-    availableTools: ["web_search", "web_fetch"],
+    tools: [webSearchTool],
+    availableTools: ["search_web", "web_fetch"],
     enableSessionStore: false,
     // Replace mode drops Copilot's built-in coding-agent prompt entirely.
     systemMessage: { mode: "replace", content: await systemPromptFor(model) },
@@ -289,7 +379,7 @@ async function handleChat(req, res) {
     session.on("assistant.message", (e) => emit("message", { text: e.data.content })),
     session.on("tool.execution_start", (e) => {
       const { toolName, arguments: args = {} } = e.data;
-      if (toolName === "web_search") emit("tool", { kind: "search", label: String(args.query || "") });
+      if (toolName === "search_web" || toolName === "web_search") emit("tool", { kind: "search", label: String(args.query || "") });
       else if (toolName === "web_fetch") emit("tool", { kind: "fetch", label: String(args.url || "") });
     }),
     session.on("session.error", (e) => finish("error", { error: e.data?.message || "Somthing went wrong" })),
