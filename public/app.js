@@ -87,6 +87,20 @@
   }
   addEventListener("focus", () => syncReady && !inflight && pullChats());
   const savePrefs = () => localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  const themeToggle = $("#theme-toggle");
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    const nextIsLight = theme === "dark";
+    themeToggle.textContent = nextIsLight ? "☀" : "☾";
+    themeToggle.title = nextIsLight ? "Swich to lite mode" : "Swich to drak mode";
+    themeToggle.setAttribute("aria-label", themeToggle.title);
+  }
+  applyTheme(prefs.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+  themeToggle.addEventListener("click", () => {
+    prefs.theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    applyTheme(prefs.theme);
+    savePrefs();
+  });
   const uid = () =>
     crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
   const modelName = (id) => models.find((m) => m.id === id)?.name || id;

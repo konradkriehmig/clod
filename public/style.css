@@ -24,8 +24,21 @@
 }
 
 /* Sampled from the real Claude app's dark mode */
+:root[data-theme="dark"] {
+  --bg: #151515;
+  --sidebar: #111111;
+  --panel: #20201f;
+  --text: #f0eee6;
+  --muted: #9c9a93;
+  --border: #2c2c2b;
+  --ring: #444444;
+  --hover: #343434;
+  --accent-dark: #e0896b;
+  --user-bubble: #2b2b2a;
+  --code-bg: #0d0d0d;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg: #151515;
     --sidebar: #111111;
     --panel: #20201f;
@@ -87,6 +100,7 @@ body.sidebar-hidden #sidebar { margin-left: -270px; }
   color: var(--muted);
 }
 .icon-btn:hover { background: var(--hover); }
+#theme-toggle { font-size: 17px; }
 .icon-btn.floating { position: absolute; top: 12px; left: 12px; display: none; }
 body.sidebar-hidden .icon-btn.floating { display: block; }
 
@@ -313,4 +327,7 @@ body.dragging #composer { outline: 3px dashed var(--accent); outline-offset: 4px
 /* Thin, trackless scrollbars like Claude's */
 * { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
 :root { --scroll-thumb: rgba(20, 20, 19, 0.2); }
-@media (prefers-color-scheme: dark) { :root { --scroll-thumb: rgba(229, 227, 216, 0.18); } }
+:root[data-theme="dark"] { --scroll-thumb: rgba(229, 227, 216, 0.18); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) { --scroll-thumb: rgba(229, 227, 216, 0.18); }
+}

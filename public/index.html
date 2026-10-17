@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Clod</title>
   <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+  <script>
+    try {
+      const theme = JSON.parse(localStorage.getItem("clod.prefs.v1") || "{}").theme;
+      if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
   <link rel="stylesheet" href="/vendor/katex/katex.min.css" />
   <link rel="stylesheet" href="/style.css" />
 </head>
@@ -13,6 +19,7 @@
     <div class="brand">
       <img src="/logo.svg" alt="" class="brand-logo" />
       <span class="wordmark">Clod</span>
+      <button id="theme-toggle" class="icon-btn" type="button" title="Swich to lite mode" aria-label="Swich to lite mode">☀</button>
       <button id="toggle-sidebar" class="icon-btn" title="Toggel sidebar" aria-label="Toggel sidebar">☰</button>
     </div>
     <button id="new-chat" class="new-chat"><span>＋</span> New chatt</button>
